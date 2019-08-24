@@ -1,0 +1,67 @@
+/*
+ *  Synth.h
+ *  Make weird noises
+ *
+ *  Made by Michael Krzyzaniak at Arizona State University's
+ *  School of Arts, Media + Engineering in Spring of 2013
+ *  mkrzyzan@asu.edu
+ */
+
+#include "Microphone.h"
+#include "../OBTAIN.h"
+
+/*--------------------------------------------------------------------*/
+struct OpaqueMicrophoneStruct
+{
+  AUDIO_GUTS                  ;
+  MKAiff*                      audio_file ;
+};
+
+/*--------------------------------------------------------------------*/
+int mic_audio_callback         (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
+
+Microphone* mic_destroy       (Microphone* self);
+
+
+/*--------------------------------------------------------------------*/
+Microphone* mic_new(unsigned num_channels, int expected_seconds)
+{
+  Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, num_channels);
+  
+  if(self != NULL)
+    {
+      self->destroy = (Audio* (*)(Audio*))mic_destroy;
+      self->audio_file = aiffWithDurationInSeconds(num_channels, AU_SAMPLE_RATE, 16, expected_seconds + 5);
+      if(self->audio_file == NULL)
+        return (Microphone*)auDestroy((Audio*)self);
+    }
+  return self;
+}
+
+/*--------------------------------------------------------------------*/
+MKAiff* mic_get_recording(Microphone* self)
+{
+  return self->audio_file;
+}
+
+/*--------------------------------------------------------------------*/
+Microphone* mic_destroy(Microphone* self)
+{
+  if(self != NULL)
+    {
+      self->audio_file = aiffDestroy(self->audio_file);
+    }
+    
+  return (Microphone*) NULL;
+}
+
+/*--------------------------------------------------------------------*/
+int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels)
+{
+  Microphone* self = (Microphone*)SELF;
+  if(!self->buffer_timestamp_is_supported) return 0; //extra invalid buffers come after stopping
+  //fprintf(stderr, "time %llu, isPlaying %i\r\n", self->current_buffer_timestamp, self->isPlaying);
+  
+  return aiffAddFloatingPointSamplesAtPlayhead(self->audio_file, buffer, num_frames*num_channels, aiffFloatSampleType, aiffYes);
+}
+
