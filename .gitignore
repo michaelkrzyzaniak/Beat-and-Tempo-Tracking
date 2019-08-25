@@ -1,2 +1,3 @@
-demos/audio
+demos/offline/audio
+build/
 .DS_Store

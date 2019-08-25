@@ -14,8 +14,6 @@ void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_s
 void obtain_tempo_tracking              (Obtain* self);
 void obtain_beat_tracking               (Obtain* self);
 
-#define at(i, k) ((i)*self->LMS_L)+(k)
-
 /*--------------------------------------------------------------------*/
 struct Opaque_Obtain_Struct
 {
@@ -60,10 +58,6 @@ struct Opaque_Obtain_Struct
   float              cbss_eta;
   OnlineRegression*  cbss_linear_predictor;
   float*             cbss_linearly_detrended;
-  char*              LMS;
-  int                LMS_L;
-  int                LMS_gamma;
-  int                beat_search_width;
 
   obtain_tracking_mode_t   tracking_mode;
   obtain_onset_callback_t  onset_callback;
@@ -117,11 +111,6 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
       self->cbss_linearly_detrended = calloc(self->cbss_length, sizeof(*self->cbss_linearly_detrended));
       if(self->cbss_linearly_detrended == NULL) return obtain_destroy(self);
 
-      self->LMS_L = ceil(self->cbss_length / 2 - 1);
-      self->LMS = calloc(self->cbss_length * self->LMS_L, sizeof(*self->LMS));
-      if(self->LMS == NULL) return obtain_destroy(self);
-      self->LMS_gamma = self->LMS_L;
-    
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return obtain_destroy(self);
     
@@ -143,7 +132,6 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
       obtain_set_cbss_eta                    (self, OBTAIN_DEFAULT_CBSS_ETA);
       obtain_set_gaussian_tempo_decay        (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_DECAY);
       obtain_set_gaussian_tempo_width        (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_WIDTH);
-      obtain_set_beat_search_width           (self, OBTAIN_DEFAULT_BEAT_SEARCH_WIDTH);
 
       obtain_set_onset_tracking_callback     (self, NULL, NULL);
       obtain_set_tempo_tracking_callback     (self, NULL, NULL);
@@ -189,9 +177,6 @@ Obtain* obtain_destroy(Obtain* self)
 
       if(self->cbss_linearly_detrended != NULL)
         free(self->cbss_linearly_detrended);
-
-      if(self->LMS != NULL)
-        free(self->LMS);
     
       stft_destroy(self->spectral_flux_stft);
       filter_destroy(self->oss_filter);
@@ -424,125 +409,45 @@ void obtain_beat_tracking               (Obtain* self)
   self->cbss[self->cbss_index] = (self->one_minus_cbss_alpha * self->oss[oss_index]) + (self->cbss_alpha * max_phi);
   ++self->cbss_index; self->cbss_index %= self->cbss_length;
   
+  //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
+  int    num_pulses            = OBTAIN_DEFAULT_XCORR_NUM_PULSES;
+  float  pulse_locations[]     = OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS;
+  float  pulse_values[]        = OBTAIN_DEFAULT_XCORR_PULSE_VALUES;
+  float* signal                = self->cbss;
+  int    signal_length         = self->cbss_length;
+  int    signal_index          = self->cbss_index;
+
+  int phase;
+  int max_phase = 0;
+  float val_of_max_phase = -1;
   
-  //beat tracking method 1
-  int time_to_next_beat = self->num_oss_frames_processed - self->next_expected_beat_time;
-  if(time_to_next_beat > self->beat_search_width)
-    beat_was_detected = 1;
-  else if(abs(time_to_next_beat) <= self->beat_search_width)
+  for(phase=0; phase<self->beat_period_oss_samples; phase++)
     {
-      //subtract out linear prediction (1% realtime when run every frame)
-      online_regression_init(self->cbss_linear_predictor);
-      for(i=0; i<self->cbss_length; i++)
-        online_regression_update(self->cbss_linear_predictor, i, self->cbss[(i + self->cbss_index) % self->cbss_length]);
-      float m = online_regression_slope          (self->cbss_linear_predictor);
-      float b = online_regression_y_intercept    (self->cbss_linear_predictor);
-      for(i=0; i<self->cbss_length; i++)
-        self->cbss_linearly_detrended[i] = self->cbss[(i + self->cbss_index) % self->cbss_length] - (m*i+b);
-
-      //  create scalogram (16% realtime when run on every frame)
-      //  re-using gamma saves 16% realtime when gamma is 100 and 19% when gamma is 50, when this runs on every frame
-      //  so we only recalculate gamma when we start searching for a new beat, then we save is as we continue to search
-      int needs_gamma = (time_to_next_beat == -self->beat_search_width);
-      int max_k       = (needs_gamma) ? self->LMS_L : self->LMS_gamma;
-    
-      memset(self->LMS, 1, self->cbss_length * self->LMS_L * sizeof(*self->LMS)); //anything other than 0;
-
-      for(k=0; k<max_k; k++)
+      int pulse;
+      float x_corr = 0;
+      for(pulse=0; pulse<num_pulses; pulse++)
         {
-           for(i=k+1; i<self->cbss_length-k-1; i++)
-             {
-               if((self->cbss_linearly_detrended[i] > self->cbss_linearly_detrended[i-(k+1)]) &&
-                  (self->cbss_linearly_detrended[i] > self->cbss_linearly_detrended[i+(k+1)])  )
-                 self->LMS[at(i, k)] = 0;
-             }
-          //it is faster by 10% realtime to do this as a second loop
-           for(; i<self->cbss_length; i++)
-             {
-               if((self->cbss_linearly_detrended[i] > self->cbss_linearly_detrended[i-(k+1)]) &&
-                  (self->cbss_linearly_detrended[i] >= self->cbss_linearly_detrended[self->cbss_length-1])  )
-                 self->LMS[at(i, k)] = 0;
-             }
+          int index = phase + pulse_locations[pulse] * self->beat_period_oss_samples;
+          if(index < signal_length)
+            x_corr += signal[(index + signal_index) % signal_length] * pulse_values[pulse];
         }
-   
-      //calculate gamma (argmin of row-wise sum);
-      int sum;
-      if(needs_gamma)
+      if(x_corr > val_of_max_phase)
         {
-          self->LMS_gamma = 0;
-          float min_sum = 1000000;
-          for(k=0; k<self->LMS_L; k++)
-            {
-              sum = 0;
-              for(i=0; i<self->cbss_length; i++)
-                sum += self->LMS[at(i, k)];
-              if(sum < min_sum)
-                {
-                  min_sum = sum;
-                  self->LMS_gamma = k+1;
-                }
-            }
+          val_of_max_phase = x_corr;
+          max_phase = phase;
         }
-
-      sum = 0;
-      for(k=0; k<self->LMS_gamma; k++)
-        //looking in the second-to-last column is more stable;
-        //sum += self->LMS[at(self->cbss_length-1, k)];
-        sum += self->LMS[at(self->cbss_length-2, k)];
-      if(sum == 0)
-        beat_was_detected = 1;
-    }//end beat tracking method 1
-  
-  //beat tracking method 2
-  /*
-  if(self->next_expected_half_beat_time == self->num_oss_frames_processed)
-    {
-      int   num_pulses            = OBTAIN_DEFAULT_XCORR_NUM_PULSES;
-      float pulse_locations[]     = OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS;
-      float pulse_values[]        = OBTAIN_DEFAULT_XCORR_PULSE_VALUES;
-      //these might not be the most recent samples possible...
-      int   phi_start             = 0;
-      int   phi_end               = self->beat_period_oss_samples;
-      if(phi_end < self->cbss_length) phi_end = self->cbss_length;
-      //int   phi_end               = self->cbss_length - (pulse_locations[num_pulses-1] * self->beat_period_oss_samples);
-      //int   phi_start             = phi_end - self->beat_period_oss_samples;
-      //if(phi_start < 0) phi_start = 0;
-      int   phi;
-      int   max_phi               = phi_start;
-      float max_xcorr             = -100000;
-
-      for(phi=phi_start; phi<phi_end; phi++)
-        {
-          int pulse;
-          float x_corr = 0;
-          for(pulse=0; pulse<num_pulses; pulse++)
-            {
-              //the tempo might have changed since system 1 ran, so what the hell?
-              int index = phi + pulse_locations[pulse] * self->beat_period_oss_samples;
-              if(index < self->cbss_length)
-                x_corr += self->cbss[(index + self->cbss_index) % self->cbss_length] * pulse_values[pulse];
-            }
-          if(x_corr > max_xcorr)
-            {
-              max_xcorr = x_corr;
-              max_phi = phi;
-            }
-        }
-      //what if this was more than 1 beat ago because of bounds on phi?
-      double last_beat = (-self->oss_length + max_phi) / self->oss_sample_rate;
-      self->next_expected_beat_time = self->num_oss_frames_processed + last_beat + self->beat_period_oss_samples;
+      //fprintf(stderr, "%f\r\n", x_corr);
     }
-  */
-  if(beat_was_detected)
+  //fprintf(stderr, "max_phase: %i\r\n", max_phase);
+  if(max_phase == 7)
     if(self->beat_callback != NULL)
       {
         unsigned long long t = self->num_audio_samples_processed;
-        t -= (filter_get_order(self->oss_filter) / 2) * (self->sample_rate  / self->oss_sample_rate);
+        t += (7) * (self->sample_rate  / self->oss_sample_rate);
         self->beat_callback (self->beat_callback_self, t);
-        fprintf(stderr, "current_time: %llu\texpected_time: %llu\tdiff: %i\ttempo: %f\r\n", self->num_oss_frames_processed, self->next_expected_beat_time, time_to_next_beat, self->tempo_bpm);
-        self->next_expected_beat_time = self->num_oss_frames_processed + self->beat_period_oss_samples;
-        self->next_expected_half_beat_time = self->num_oss_frames_processed + (self->beat_period_oss_samples / 2);
+        //fprintf(stderr, "Here \r\n");
       }
+
 }
 
 /*--------------------------------------------------------------------*/
@@ -748,18 +653,6 @@ void      obtain_set_gaussian_tempo_width         (Obtain* self, double width)
 double    obtain_get_gaussian_tempo_width         (Obtain* self)
 {
   return sqrt(self->gaussian_tempo_width/2);
-}
-
-/*--------------------------------------------------------------------*/
-void      obtain_set_beat_search_width            (Obtain* self, int width_oss_frames)
-{
-  self->beat_search_width = width_oss_frames;
-}
-
-/*--------------------------------------------------------------------*/
-int       obtain_get_beat_search_width            (Obtain* self)
-{
-  return self->beat_search_width;
 }
 
 /*--------------------------------------------------------------------*/

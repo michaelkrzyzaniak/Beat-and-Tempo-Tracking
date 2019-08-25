@@ -33,6 +33,9 @@ int main(void)
   MKAiff* beat_aiff = aiffWithDurationInSeconds(1, sample_rate, 16, secs+1);
   if(beat_aiff == NULL){perror("unable to create beat_aiff obejct"); exit(-1);}
 
+  aiffAppendSilenceInSeconds(onset_aiff, secs);
+  aiffAppendSilenceInSeconds(beat_aiff , secs);
+
   obtain_set_onset_tracking_callback  (obtain, onset_detected_callback, onset_aiff);
   obtain_set_beat_tracking_callback   (obtain, beat_detected_callback , beat_aiff);
   
@@ -42,9 +45,6 @@ int main(void)
   timestamp_microsecs_t start = timestamp_get_current_time();
   for(;;)
     {
-      memset(buffer, 0, AUDIO_BUFFER_SIZE * sizeof(*buffer));
-      aiffAppendFloatingPointSamples(onset_aiff, buffer, AUDIO_BUFFER_SIZE, aiffFloatSampleType);
-      aiffAppendFloatingPointSamples(beat_aiff , buffer, AUDIO_BUFFER_SIZE, aiffFloatSampleType);
       int num_samples = aiffReadFloatingPointSamplesAtPlayhead(aiff, buffer, AUDIO_BUFFER_SIZE, aiffYes);
       obtain_process(obtain, buffer, num_samples);
       if(num_samples < AUDIO_BUFFER_SIZE)  break;

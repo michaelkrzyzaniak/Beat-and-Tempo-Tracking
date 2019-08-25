@@ -118,8 +118,6 @@ void      obtain_set_gaussian_tempo_decay         (Obtain* self, double coeffici
 double    obtain_get_gaussian_tempo_decay         (Obtain* self);
 void      obtain_set_gaussian_tempo_width         (Obtain* self, double width);
 double    obtain_get_gaussian_tempo_width         (Obtain* self);
-void      obtain_set_beat_search_width            (Obtain* self, int width_oss_frames /* oss samples */);
-int       obtain_get_beat_search_width            (Obtain* self);
 
 void                      obtain_set_tracking_mode            (Obtain* self, obtain_tracking_mode_t mode);
 obtain_tracking_mode_t    obtain_get_tracking_mode            (Obtain* self);

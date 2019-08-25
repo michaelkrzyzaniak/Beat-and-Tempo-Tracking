@@ -15,12 +15,11 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include "AudioSuperclass.h"
-#include "MKAiff.h"
+//#include "MKAiff.h"
 
 typedef struct OpaqueMicrophoneStruct Microphone;
 
-Microphone*       mic_new               (unsigned numChannels, int expected_seconds);
-MKAiff*           mic_get_recording     (Microphone* self);
+Microphone*       mic_new               ();
 
 //Microphone*  mic_destroy             (Microphone*      self      );
 //call with self->destroy(self);
