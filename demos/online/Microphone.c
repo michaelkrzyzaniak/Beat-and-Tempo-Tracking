@@ -9,6 +9,7 @@
 
 #include "Microphone.h"
 #include "../../OBTAIN.h"
+#include "Click.h"
 
 void mic_onset_detected_callback(void* SELF, unsigned long long sample_time);
 void mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
@@ -16,16 +17,14 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
 /*--------------------------------------------------------------------*/
 struct OpaqueMicrophoneStruct
 {
-  AUDIO_GUTS                  ;
-  //MKAiff*                      audio_file ;
-  Obtain* obtain;
+  AUDIO_GUTS            ;
+  Obtain* obtain        ;
+  Click*  click         ;
 };
 
 /*--------------------------------------------------------------------*/
-int mic_audio_callback         (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
-
-Microphone* mic_destroy       (Microphone* self);
-
+int         mic_audio_callback  (void* SELF, auSample_t* buffer, int num_frames, int num_channels);
+Microphone* mic_destroy         (Microphone* self);
 
 /*--------------------------------------------------------------------*/
 Microphone* mic_new()
@@ -35,16 +34,21 @@ Microphone* mic_new()
   if(self != NULL)
     {
       self->destroy = (Audio* (*)(Audio*))mic_destroy;
+    
+      self->click = click_new();
+      if(self->click == NULL)
+        return (Microphone*)auDestroy((Audio*)self);
+    
       self->obtain = obtain_new_default();
       if(self->obtain == NULL)
         return (Microphone*)auDestroy((Audio*)self);
     
       obtain_set_onset_tracking_callback  (self->obtain, mic_onset_detected_callback, self);
       obtain_set_beat_tracking_callback   (self->obtain, mic_beat_detected_callback , self);
-      //self->audio_file = aiffWithDurationInSeconds(num_channels, AU_SAMPLE_RATE, 16, expected_seconds + 5);
-      //if(self->audio_file == NULL)
-        //return (Microphone*)auDestroy((Audio*)self);
     }
+  
+  //there should be a play callback that I can intercept and do this there.
+  auPlay((Audio*)self->click);
   return self;
 }
 
@@ -52,7 +56,6 @@ Microphone* mic_new()
 void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
-
 }
 
 /*--------------------------------------------------------------------*/
@@ -60,25 +63,18 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
 void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
-  //fprintf(stderr, "beat\r\n");
-  putc(0x07, stderr);
+  fprintf(stderr, "click\r\n");
+  //putc(0x07, stderr);
+  click_click(self->click);
 }
-
-
-/*--------------------------------------------------------------------*/
-/*
-MKAiff* mic_get_recording(Microphone* self)
-{
-  return self->audio_file;
-}
-*/
 
 /*--------------------------------------------------------------------*/
 Microphone* mic_destroy(Microphone* self)
 {
   if(self != NULL)
     {
-      //self->audio_file = aiffDestroy(self->audio_file);
+      obtain_destroy(self->obtain);
+      auDestroy((Audio*)self->click);
     }
     
   return (Microphone*) NULL;
@@ -88,11 +84,7 @@ Microphone* mic_destroy(Microphone* self)
 int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels)
 {
   Microphone* self = (Microphone*)SELF;
-  //if(!self->buffer_timestamp_is_supported) return 0; //extra invalid buffers come after stopping
-  
   obtain_process(self->obtain, buffer, num_frames);
-  
   return  num_frames;
-  //return aiffAddFloatingPointSamplesAtPlayhead(self->audio_file, buffer, num_frames*num_channels, aiffFloatSampleType, aiffYes);
 }
 
