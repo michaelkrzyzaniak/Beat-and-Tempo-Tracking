@@ -44,16 +44,16 @@ typedef enum
   OBTAIN_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
 }obtain_tracking_mode_t;
 
-#define OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_LEN         1024
+#define OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_LEN         1024  //
 #define OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP     8     // hop size will be len / overlap
-#define OBTAIN_SUGGESTED_OSS_FILTER_ORDER               15    // enough to hold 3 seconds at 44.1kHz and hop of 128
+#define OBTAIN_SUGGESTED_OSS_FILTER_ORDER               15    // this will delay the signal by about 7 samples
 #define OBTAIN_SUGGESTED_OSS_LENGTH                     1024  // enough to hold 3 seconds at 44.1kHz and hop of 128
 #define OBTAIN_SUGGESTED_ONSET_THRESHOLD_N              1024  // size of moving average of oss to see if onset occured
 #define OBTAIN_SUGGESTED_SAMPLE_RATE                    44100 //
-#define OBTAIN_SUGGESTED_CBSS_LENGTH                    512   //at least smallest power of 2 greater than or equal to slowest tempo lag in oss sample?
+#define OBTAIN_SUGGESTED_CBSS_LENGTH                    512   //should be at least a little bigger than the slowest tempo lag in oss samples
 
-#define OBTAIN_DEFAULT_MIN_TEMPO                        40    //
-#define OBTAIN_DEFAULT_MAX_TEMPO                        210   //
+#define OBTAIN_DEFAULT_MIN_TEMPO                        60    //
+#define OBTAIN_DEFAULT_MAX_TEMPO                        180   //
 #define OBTAIN_DEFAULT_SPECTRAL_COMPRESSION_GAMMA       3     //
 #define OBTAIN_DEFAULT_CORRELATION_EXPONENT             0.5   //
 #define OBTAIN_DEFAULT_NUM_TEMPO_CANDIDATES             10    //

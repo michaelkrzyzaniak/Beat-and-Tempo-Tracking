@@ -60,8 +60,10 @@ struct Opaque_Obtain_Struct
   float              cbss_alpha;
   float              one_minus_cbss_alpha;
   float              cbss_eta;
-  OnlineRegression*  cbss_linear_predictor;
-  float*             cbss_linearly_detrended;
+  float*             predicted_beat_signal;
+  int                predicted_beat_index;
+  //OnlineRegression*  cbss_linear_predictor;
+  //float*             cbss_linearly_detrended;
 
   obtain_tracking_mode_t   tracking_mode;
   obtain_onset_callback_t  onset_callback;
@@ -112,14 +114,17 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
       self->cbss = calloc(self->cbss_length, sizeof(*self->cbss));
       if(self->cbss == NULL) return obtain_destroy(self);
 
-      self->cbss_linearly_detrended = calloc(self->cbss_length, sizeof(*self->cbss_linearly_detrended));
-      if(self->cbss_linearly_detrended == NULL) return obtain_destroy(self);
+      self->predicted_beat_signal = calloc(self->cbss_length, sizeof(*self->predicted_beat_signal));
+      if(self->predicted_beat_signal == NULL) return obtain_destroy(self);
+  
+      //self->cbss_linearly_detrended = calloc(self->cbss_length, sizeof(*self->cbss_linearly_detrended));
+      //if(self->cbss_linearly_detrended == NULL) return obtain_destroy(self);
 
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return obtain_destroy(self);
     
-      self->cbss_linear_predictor = online_regression_new();
-      if(self->cbss_linear_predictor == NULL) return obtain_destroy(self);
+      //self->cbss_linear_predictor = online_regression_new();
+      //if(self->cbss_linear_predictor == NULL) return obtain_destroy(self);
 
       obtain_set_min_tempo                       (self, OBTAIN_DEFAULT_MIN_TEMPO);
       obtain_set_max_tempo                       (self, OBTAIN_DEFAULT_MAX_TEMPO);
@@ -181,14 +186,13 @@ Obtain* obtain_destroy(Obtain* self)
       if(self->cbss != NULL)
         free(self->cbss);
 
-      if(self->cbss_linearly_detrended != NULL)
-        free(self->cbss_linearly_detrended);
+      if(self->predicted_beat_signal != NULL)
+        free(self->predicted_beat_signal);
     
       stft_destroy(self->spectral_flux_stft);
       filter_destroy(self->oss_filter);
       adaptive_threshold_destroy(self->onset_threshold);
       online_average_destroy(self->tempo_score_variance);
-      online_regression_destroy(self->cbss_linear_predictor);
     
       free(self);
     }
@@ -206,7 +210,7 @@ void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_s
   dft_rect_to_polar(real, imag, n_over_2);
   real[0] = 0;
 
-  //Mormalize -- I'm not sure this is the correct approach here if we expect periods of silence
+  //Normalize -- I'm not sure this is the correct approach here if we expect periods of silence
   if(self->should_normalize_amplitude)
     dft_normalize_magnitude(real, n_over_2);
   
@@ -389,11 +393,9 @@ void obtain_tempo_tracking              (Obtain* self)
 /*--------------------------------------------------------------------*/
 void obtain_beat_tracking               (Obtain* self)
 {
-  int i, k;
+  int i;
   
-  int beat_was_detected = 0;
-  
-  //calculate cbss (equation 5)
+  //calculate cbss
   float phi         = 0;
   float max_phi     = 0;
   int   start_index = -2   * self->beat_period_oss_samples;
@@ -407,6 +409,7 @@ void obtain_beat_tracking               (Obtain* self)
   if(end_index < -self->cbss_length)
     end_index = -self->cbss_length;
   
+  //equation 5, search for score of previous beat
   for(i=start_index; i<end_index; i++)
     {
       cbss_index = (base_cbss_index + i) % self->cbss_length;
@@ -420,10 +423,11 @@ void obtain_beat_tracking               (Obtain* self)
         max_phi = phi;
     }
   
-  //equation 6
+  //equation 6, blend score of previous beat with oss
   self->cbss[self->cbss_index] = (self->one_minus_cbss_alpha * self->oss[oss_index]) + (self->cbss_alpha * max_phi);
   ++self->cbss_index; self->cbss_index %= self->cbss_length;
   
+  //cross-correlate cbss with pulses
   //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
   int    num_pulses            = OBTAIN_DEFAULT_XCORR_NUM_PULSES;
   float  pulse_locations[]     = OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS;
@@ -452,8 +456,44 @@ void obtain_beat_tracking               (Obtain* self)
         }
       //fprintf(stderr, "%f\r\n", x_corr);
     }
-  //fprintf(stderr, "max_phase: %i\r\n", max_phase);
-  if(max_phase == 7)
+  
+  //project beat into the future
+  max_phase = max_phase - self->cbss_length + 1;
+  max_phase -= 0 + filter_get_order(self->oss_filter) / 2; //make getter /  setter for adjustment value
+  max_phase %= self->beat_period_oss_samples;
+  max_phase = self->beat_period_oss_samples + max_phase;
+  
+  //add this into the probabilities of future beats
+  float gaussian;
+  float two_sigma_squared = 2 * 10 * 10; //MAKE A GETTER / SETTER FOR SIGMA
+  int   index, max_index=0;
+  float max_value=-1;
+  
+  //fprintf(stderr, "--------------------------\r\n");
+  //the bounds of this loop could be more restrictive
+  
+  for(i=0; i<self->cbss_length; i++)
+    {
+      gaussian = i-max_phase;
+      gaussian *= gaussian;
+      gaussian = exp(-gaussian / two_sigma_squared);
+      index = (self->predicted_beat_index + i) % self->cbss_length;
+      self->predicted_beat_signal[index] += gaussian;
+    
+      //fprintf(stderr, "%f\r\n", self->predicted_beat_signal[index]);
+    
+      if(self->predicted_beat_signal[index] > max_value)
+        {
+          max_value = self->predicted_beat_signal[index];
+          max_index = i;
+        }
+    }
+  
+  self->predicted_beat_signal[self->predicted_beat_index] = 0;
+  ++self->predicted_beat_index; self->predicted_beat_index %= self->cbss_length;
+  
+  //fprintf(stderr, "max_index: %i\r\n", max_index);
+  if(max_index == 7)
     if(self->beat_callback != NULL)
       {
         unsigned long long t = self->num_audio_samples_processed;
