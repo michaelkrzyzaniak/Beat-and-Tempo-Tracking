@@ -35,13 +35,7 @@ Microphone* mic_new()
   if(self != NULL)
     {
       self->destroy = (Audio* (*)(Audio*))mic_destroy;
-      self->obtain = obtain_new(OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_LEN,
-                                OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP,
-                                OBTAIN_SUGGESTED_OSS_FILTER_ORDER,
-                                OBTAIN_SUGGESTED_OSS_LENGTH,
-                                OBTAIN_SUGGESTED_ONSET_THRESHOLD_N,
-                                OBTAIN_SUGGESTED_CBSS_LENGTH,
-                                OBTAIN_SUGGESTED_SAMPLE_RATE);
+      self->obtain = obtain_new_default();
       if(self->obtain == NULL)
         return (Microphone*)auDestroy((Audio*)self);
     

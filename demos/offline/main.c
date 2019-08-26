@@ -1,4 +1,4 @@
-#include "../OBTAIN.h"
+#include "../../OBTAIN.h"
 #include "MKAiff.h"
 #include "Timestamp.h"
 
@@ -10,8 +10,8 @@ void beat_detected_callback (void* SELF, unsigned long long sample_time);
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  MKAiff* aiff = aiffWithContentsOfFile("demos/audio/beat.aiff");
-  if(aiff == NULL){perror("unable to open demos/audio/beat.aiff"); exit(-1);}
+  MKAiff* aiff = aiffWithContentsOfFile("audio/beat.aiff");
+  if(aiff == NULL){perror("unable to open audio/beat.aiff"); exit(-1);}
   aiffMakeMono(aiff);
   float secs = aiffDurationInSeconds(aiff);
   double sample_rate = aiffSampleRate(aiff);

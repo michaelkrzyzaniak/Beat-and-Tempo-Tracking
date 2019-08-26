@@ -9,6 +9,9 @@
 
 #include <stdio.h> //fprintf (testing only)
 
+#define BPM_TO_LAG(bpm) (60 * self->oss_sample_rate / ((float)(bpm)))
+#define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
+
 void obtain_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, dft_sample_t* imag, int N);
 void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_sample_t* imag, int N);
 void obtain_tempo_tracking              (Obtain* self);
@@ -37,10 +40,11 @@ struct Opaque_Obtain_Struct
   dft_sample_t*      autocorrelation_imag;
   double             autocorrelation_exponent;
   OnlineAverage*     tempo_score_variance;
+  double             log_gaussian_tempo_weight_width;
+  double             log_gaussian_tempo_weight_mean;
   dft_sample_t*      gaussian_tempo_histogram;
-  double             gaussian_tempo_decay;
-  double             one_minus_gaussian_tempo_decay;
-  double             gaussian_tempo_width;
+  double             gaussian_tempo_histogram_decay;
+  double             gaussian_tempo_histogram_width;
 
   unsigned long long num_audio_samples_processed;
   unsigned long long num_oss_frames_processed;
@@ -116,26 +120,28 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
     
       self->cbss_linear_predictor = online_regression_new();
       if(self->cbss_linear_predictor == NULL) return obtain_destroy(self);
-    
-      obtain_set_min_tempo                   (self, OBTAIN_DEFAULT_MIN_TEMPO);
-      obtain_set_max_tempo                   (self, OBTAIN_DEFAULT_MAX_TEMPO);
-      obtain_set_spectral_compression_gamma  (self, OBTAIN_DEFAULT_SPECTRAL_COMPRESSION_GAMMA);
-      obtain_set_autocorrelation_exponent    (self, OBTAIN_DEFAULT_CORRELATION_EXPONENT);
-      obtain_set_num_tempo_candidates        (self, OBTAIN_DEFAULT_NUM_TEMPO_CANDIDATES);
-      obtain_set_tracking_mode               (self, OBTAIN_DEFAULT_TRACKING_MODE);
-      obtain_set_oss_filter_cutoff           (self, OBTAIN_DEFAULT_OSS_FILTER_CUTOFF);
-      obtain_set_use_amplitude_normalization (self, OBTAIN_DEFAULT_USE_AMP_NORMALIZATION);
-      obtain_set_onset_threshold             (self, OBTAIN_DEFAULT_ONSET_TREHSHOLD);
-    
-      obtain_set_noise_cancellation_threshold(self, OBTAIN_DEFAULT_NOISE_CANCELLATION_THRESHOLD);
-      obtain_set_cbss_alpha                  (self, OBTAIN_DEFAULT_CBSS_ALPHA);
-      obtain_set_cbss_eta                    (self, OBTAIN_DEFAULT_CBSS_ETA);
-      obtain_set_gaussian_tempo_decay        (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_DECAY);
-      obtain_set_gaussian_tempo_width        (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_WIDTH);
 
-      obtain_set_onset_tracking_callback     (self, NULL, NULL);
-      obtain_set_tempo_tracking_callback     (self, NULL, NULL);
-      obtain_set_beat_tracking_callback      (self, NULL, NULL);
+      obtain_set_min_tempo                       (self, OBTAIN_DEFAULT_MIN_TEMPO);
+      obtain_set_max_tempo                       (self, OBTAIN_DEFAULT_MAX_TEMPO);
+      obtain_set_spectral_compression_gamma      (self, OBTAIN_DEFAULT_SPECTRAL_COMPRESSION_GAMMA);
+      obtain_set_autocorrelation_exponent        (self, OBTAIN_DEFAULT_CORRELATION_EXPONENT);
+      obtain_set_num_tempo_candidates            (self, OBTAIN_DEFAULT_NUM_TEMPO_CANDIDATES);
+      obtain_set_tracking_mode                   (self, OBTAIN_DEFAULT_TRACKING_MODE);
+      obtain_set_oss_filter_cutoff               (self, OBTAIN_DEFAULT_OSS_FILTER_CUTOFF);
+      obtain_set_use_amplitude_normalization     (self, OBTAIN_DEFAULT_USE_AMP_NORMALIZATION);
+      obtain_set_onset_threshold                 (self, OBTAIN_DEFAULT_ONSET_TREHSHOLD);
+
+      obtain_set_noise_cancellation_threshold    (self, OBTAIN_DEFAULT_NOISE_CANCELLATION_THRESHOLD);
+      obtain_set_cbss_alpha                      (self, OBTAIN_DEFAULT_CBSS_ALPHA);
+      obtain_set_cbss_eta                        (self, OBTAIN_DEFAULT_CBSS_ETA);
+      obtain_set_log_gaussian_tempo_weight_mean  (self, OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN);
+      obtain_set_log_gaussian_tempo_weight_width (self, OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH);
+      obtain_set_gaussian_tempo_histogram_decay  (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY);
+      obtain_set_gaussian_tempo_histogram_width  (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH);
+
+      obtain_set_onset_tracking_callback         (self, NULL, NULL);
+      obtain_set_tempo_tracking_callback         (self, NULL, NULL);
+      obtain_set_beat_tracking_callback          (self, NULL, NULL);
     }
   return self;
 }
@@ -352,23 +358,32 @@ void obtain_tempo_tracking              (Obtain* self)
   
   //store gaussian histogram
   int index_of_max_gaussian = 0;
-  float gaussian = 0;
-  float two_sigma_squared = self->gaussian_tempo_width;
+  float gaussian, log_gaussian;
+  float two_sigma_squared = self->gaussian_tempo_histogram_width;
   
-  for(i=0; i<self->oss_length; i++)
+  /* we could choose even narrower bounds, for example based on the widths of the gaussians or the valid tempo range */
+  for(i=self->min_lag; i<self->max_lag; i++)
     {
-      gaussian = (i-candidate_tempo_lags[index_of_max_score]);
+      gaussian = i-candidate_tempo_lags[index_of_max_score];
       gaussian *= gaussian;
       gaussian = exp(-gaussian / two_sigma_squared);
-      self->gaussian_tempo_histogram[i] *= self->gaussian_tempo_decay;
-      self->gaussian_tempo_histogram[i] += gaussian * self->one_minus_gaussian_tempo_decay;
+    
+    
+      log_gaussian = log2(i * self->log_gaussian_tempo_weight_mean);
+      log_gaussian *= log_gaussian;
+      log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width);
+    
+      self->gaussian_tempo_histogram[i] *= self->gaussian_tempo_histogram_decay;
+      self->gaussian_tempo_histogram[i] += gaussian * log_gaussian;
       if(self->gaussian_tempo_histogram[i] > self->gaussian_tempo_histogram[index_of_max_gaussian])
         index_of_max_gaussian = i;
     }
 
-  self->tempo_bpm = (int)(60*self->oss_sample_rate / index_of_max_gaussian);
+  self->tempo_bpm = BPM_TO_LAG(index_of_max_gaussian);
   self->beat_period_oss_samples = index_of_max_gaussian;
   self->beat_period_audio_samples = self->sample_rate * self->beat_period_oss_samples / self->oss_sample_rate;
+  
+  //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
 }
 
 /*--------------------------------------------------------------------*/
@@ -395,7 +410,7 @@ void obtain_beat_tracking               (Obtain* self)
   for(i=start_index; i<end_index; i++)
     {
       cbss_index = (base_cbss_index + i) % self->cbss_length;
-      phi = log(-(i/(float)self->beat_period_oss_samples));
+      phi = log2(-(i/(float)self->beat_period_oss_samples));
       phi *= phi;
       phi *= self->cbss_eta;
       phi = exp(phi);
@@ -416,10 +431,9 @@ void obtain_beat_tracking               (Obtain* self)
   float* signal                = self->cbss;
   int    signal_length         = self->cbss_length;
   int    signal_index          = self->cbss_index;
-
-  int phase;
-  int max_phase = 0;
-  float val_of_max_phase = -1;
+  int    phase;
+  int    max_phase = 0;
+  float  val_of_max_phase = -1;
   
   for(phase=0; phase<self->beat_period_oss_samples; phase++)
     {
@@ -535,7 +549,7 @@ double    obtain_get_autocorrelation_exponent     (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_min_tempo                    (Obtain* self, double min_tempo)
 {
-  int max_lag = (60 * self->oss_sample_rate / min_tempo) + 1;
+  int max_lag = BPM_TO_LAG(min_tempo) + 1;
   if(max_lag > self->oss_length) max_lag = self->oss_length;
   self->max_lag = max_lag;
 }
@@ -543,13 +557,13 @@ void      obtain_set_min_tempo                    (Obtain* self, double min_temp
 /*--------------------------------------------------------------------*/
 double    obtain_get_min_tempo                    (Obtain* self)
 {
-  return 60 * self->oss_sample_rate / self->max_lag;
+  return LAG_TO_BPM(self->max_lag);
 }
 
 /*--------------------------------------------------------------------*/
 void      obtain_set_max_tempo                    (Obtain* self, double max_tempo)
 {
-  int min_lag = 60 * self->oss_sample_rate / max_tempo;
+  int min_lag = BPM_TO_LAG(max_tempo);
   if(min_lag < 0) min_lag = 0;
   self->min_lag = min_lag;
 }
@@ -557,7 +571,7 @@ void      obtain_set_max_tempo                    (Obtain* self, double max_temp
 /*--------------------------------------------------------------------*/
 double    obtain_get_max_tempo                    (Obtain* self)
 {
-  return 60 * self->oss_sample_rate / self->min_lag;
+  return LAG_TO_BPM(self->min_lag);
 }
 
 /*--------------------------------------------------------------------*/
@@ -629,30 +643,58 @@ double    obtain_get_cbss_eta                     (Obtain* self)
 }
 
 /*--------------------------------------------------------------------*/
-void      obtain_set_gaussian_tempo_decay         (Obtain* self, double coefficient)
+void      obtain_set_gaussian_tempo_histogram_decay         (Obtain* self, double coefficient)
 {
   if(coefficient < 0) coefficient = 0;
   if(coefficient > 1) coefficient = 1;
-  self->gaussian_tempo_decay = coefficient;
-  self->one_minus_gaussian_tempo_decay = (1-coefficient);
+  self->gaussian_tempo_histogram_decay = coefficient;
 }
 
 /*--------------------------------------------------------------------*/
-double    obtain_get_gaussian_tempo_decay         (Obtain* self)
+double    obtain_get_gaussian_tempo_histogram_decay         (Obtain* self)
 {
-  return self->gaussian_tempo_decay;
+  return self->gaussian_tempo_histogram_decay;
 }
 
 /*--------------------------------------------------------------------*/
-void      obtain_set_gaussian_tempo_width         (Obtain* self, double width)
+void      obtain_set_gaussian_tempo_histogram_width         (Obtain* self, double width)
 {
-  self->gaussian_tempo_width = 2 * (width * width);
+  self->gaussian_tempo_histogram_width = 2 * (width * width);
 }
 
 /*--------------------------------------------------------------------*/
-double    obtain_get_gaussian_tempo_width         (Obtain* self)
+double    obtain_get_gaussian_tempo_histogram_width         (Obtain* self)
 {
-  return sqrt(self->gaussian_tempo_width/2);
+  return sqrt(self->gaussian_tempo_histogram_width/2);
+}
+
+/*--------------------------------------------------------------------*/
+void      obtain_set_log_gaussian_tempo_weight_mean (Obtain* self, double bpm)
+{
+  double width = obtain_get_log_gaussian_tempo_weight_width(self);
+  self->log_gaussian_tempo_weight_mean = 1.0 / BPM_TO_LAG(bpm);
+  obtain_set_log_gaussian_tempo_weight_width(self, width);
+}
+
+/*--------------------------------------------------------------------*/
+double    obtain_get_log_gaussian_tempo_weight_mean (Obtain* self)
+{
+  return LAG_TO_BPM(1 / self->log_gaussian_tempo_weight_mean);
+}
+
+/*--------------------------------------------------------------------*/
+void      obtain_set_log_gaussian_tempo_weight_width(Obtain* self, double bpm)
+{
+  if(bpm <= 0) return;
+  
+  double denominator = bpm / obtain_get_log_gaussian_tempo_weight_mean(self);
+  self->log_gaussian_tempo_weight_width = denominator * denominator;
+}
+
+/*--------------------------------------------------------------------*/
+double    obtain_get_log_gaussian_tempo_weight_width(Obtain* self)
+{
+  return obtain_get_log_gaussian_tempo_weight_mean(self) * sqrt(self->log_gaussian_tempo_weight_width);
 }
 
 /*--------------------------------------------------------------------*/

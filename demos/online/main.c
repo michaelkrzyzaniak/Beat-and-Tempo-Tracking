@@ -7,6 +7,7 @@ int main(void)
   if(mic == NULL) {perror("Unable to create miccrophone object"); exit(-1);}
   
   auPlay((Audio*)mic);
-  for(;;);
+  for(;;)
+    sleep(1);
 }
 
