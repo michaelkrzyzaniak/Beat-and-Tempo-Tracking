@@ -62,9 +62,10 @@ struct Opaque_Obtain_Struct
   float              cbss_eta;
   float*             predicted_beat_signal;
   int                predicted_beat_index;
-  //OnlineRegression*  cbss_linear_predictor;
-  //float*             cbss_linearly_detrended;
-
+  int                beat_prediction_adjustment;
+  int                predicted_beat_trigger_index;
+  int                predicted_beat_gaussian_width;
+  
   obtain_tracking_mode_t   tracking_mode;
   obtain_onset_callback_t  onset_callback;
   obtain_tempo_callback_t  tempo_callback;
@@ -116,15 +117,8 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
 
       self->predicted_beat_signal = calloc(self->cbss_length, sizeof(*self->predicted_beat_signal));
       if(self->predicted_beat_signal == NULL) return obtain_destroy(self);
-  
-      //self->cbss_linearly_detrended = calloc(self->cbss_length, sizeof(*self->cbss_linearly_detrended));
-      //if(self->cbss_linearly_detrended == NULL) return obtain_destroy(self);
-
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return obtain_destroy(self);
-    
-      //self->cbss_linear_predictor = online_regression_new();
-      //if(self->cbss_linear_predictor == NULL) return obtain_destroy(self);
 
       obtain_set_min_tempo                       (self, OBTAIN_DEFAULT_MIN_TEMPO);
       obtain_set_max_tempo                       (self, OBTAIN_DEFAULT_MAX_TEMPO);
@@ -143,6 +137,9 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
       obtain_set_log_gaussian_tempo_weight_width (self, OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH);
       obtain_set_gaussian_tempo_histogram_decay  (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY);
       obtain_set_gaussian_tempo_histogram_width  (self, OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH);
+      obtain_set_beat_prediction_adjustment      (self, OBTAIN_DEFAULT_BEAT_PREDICTION_ADJUSTMENT);
+      obtain_set_predicted_beat_trigger_index    (self, OBTAIN_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX);
+      obtain_set_predicted_beat_gaussian_width   (self, OBTAIN_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH);
 
       obtain_set_onset_tracking_callback         (self, NULL, NULL);
       obtain_set_tempo_tracking_callback         (self, NULL, NULL);
@@ -459,29 +456,23 @@ void obtain_beat_tracking               (Obtain* self)
   
   //project beat into the future
   max_phase = max_phase - self->cbss_length + 1;
-  max_phase -= 0 + filter_get_order(self->oss_filter) / 2; //make getter /  setter for adjustment value
+  max_phase -= self->beat_prediction_adjustment + filter_get_order(self->oss_filter) / 2; //make getter /  setter for adjustment value
   max_phase %= self->beat_period_oss_samples;
   max_phase = self->beat_period_oss_samples + max_phase;
   
   //add this into the probabilities of future beats
   float gaussian;
-  float two_sigma_squared = 2 * 10 * 10; //MAKE A GETTER / SETTER FOR SIGMA
   int   index, max_index=0;
   float max_value=-1;
   
-  //fprintf(stderr, "--------------------------\r\n");
   //the bounds of this loop could be more restrictive
-  
   for(i=0; i<self->cbss_length; i++)
     {
       gaussian = i-max_phase;
       gaussian *= gaussian;
-      gaussian = exp(-gaussian / two_sigma_squared);
+      gaussian = exp(-gaussian / self->predicted_beat_gaussian_width);
       index = (self->predicted_beat_index + i) % self->cbss_length;
       self->predicted_beat_signal[index] += gaussian;
-    
-      //fprintf(stderr, "%f\r\n", self->predicted_beat_signal[index]);
-    
       if(self->predicted_beat_signal[index] > max_value)
         {
           max_value = self->predicted_beat_signal[index];
@@ -492,12 +483,12 @@ void obtain_beat_tracking               (Obtain* self)
   self->predicted_beat_signal[self->predicted_beat_index] = 0;
   ++self->predicted_beat_index; self->predicted_beat_index %= self->cbss_length;
   
-  //fprintf(stderr, "max_index: %i\r\n", max_index);
-  if(max_index == 7)
+  
+  if(max_index == self->predicted_beat_trigger_index) //maybe a getter_setter for this as well
     if(self->beat_callback != NULL)
       {
         unsigned long long t = self->num_audio_samples_processed;
-        t += (7) * (self->sample_rate  / self->oss_sample_rate);
+        t += (self->predicted_beat_trigger_index) * (self->sample_rate  / self->oss_sample_rate);
         self->beat_callback (self->beat_callback_self, t);
         //fprintf(stderr, "Here \r\n");
       }
@@ -735,6 +726,42 @@ void      obtain_set_log_gaussian_tempo_weight_width(Obtain* self, double bpm)
 double    obtain_get_log_gaussian_tempo_weight_width(Obtain* self)
 {
   return obtain_get_log_gaussian_tempo_weight_mean(self) * sqrt(self->log_gaussian_tempo_weight_width);
+}
+
+/*--------------------------------------------------------------------*/
+void      obtain_set_beat_prediction_adjustment     (Obtain* self, int oss_samples_earlier)
+{
+  self->beat_prediction_adjustment = oss_samples_earlier;
+}
+
+/*--------------------------------------------------------------------*/
+int       obtain_get_beat_prediction_adjustment     (Obtain* self)
+{
+  return self->beat_prediction_adjustment;
+}
+
+/*--------------------------------------------------------------------*/
+void      obtain_set_predicted_beat_trigger_index   (Obtain* self, int index)
+{
+  self->predicted_beat_trigger_index = index;
+}
+
+/*--------------------------------------------------------------------*/
+int       obtain_get_predicted_beat_trigger_index   (Obtain* self)
+{
+  return self->predicted_beat_trigger_index;
+}
+
+/*--------------------------------------------------------------------*/
+void      obtain_set_predicted_beat_gaussian_width  (Obtain* self, double width)
+{
+  self->predicted_beat_gaussian_width = 2 * width * width;
+}
+
+/*--------------------------------------------------------------------*/
+double    obtain_get_predicted_beat_gaussian_width  (Obtain* self)
+{
+  return sqrt(self->predicted_beat_gaussian_width / 2);
 }
 
 /*--------------------------------------------------------------------*/

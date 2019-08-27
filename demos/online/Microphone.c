@@ -8,7 +8,6 @@
  */
 
 #include "Microphone.h"
-#include "../../OBTAIN.h"
 #include "Click.h"
 
 void mic_onset_detected_callback(void* SELF, unsigned long long sample_time);
@@ -63,7 +62,7 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
 void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
-  fprintf(stderr, "click\r\n");
+  //fprintf(stderr, "click\r\n");
   //putc(0x07, stderr);
   click_click(self->click);
 }
@@ -78,6 +77,11 @@ Microphone* mic_destroy(Microphone* self)
     }
     
   return (Microphone*) NULL;
+}
+
+Obtain*           mic_get_obtain        (Microphone* self)
+{
+  return self->obtain;
 }
 
 /*--------------------------------------------------------------------*/

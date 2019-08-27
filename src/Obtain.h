@@ -67,14 +67,17 @@ typedef enum
 #define OBTAIN_DEFAULT_XCORR_NUM_PULSES                 8     //
 #define OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS            {0, 1, 1.5, 2, 3, 4, 4.5, 6}
 #define OBTAIN_DEFAULT_XCORR_PULSE_VALUES               {2.0, 1.0, 0.5, 1.5, 1.5, 0.5, 0.5, 0.5}
-#define OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   100  //supress harmonic by favoring tempos closer to 100
-#define OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH  100  //oss samples starndard deviation
+#define OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   100   //supress harmonic by favoring tempos closer to 100
+#define OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH  100   //oss samples starndard deviation
 
-#define OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY   0.995  //
+#define OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY   0.995 //
 #define OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH   10    //oss samples starndard deviation
 
 #define OBTAIN_DEFAULT_CBSS_ALPHA                       0.9   //90% old, 10 percent new
-#define OBTAIN_DEFAULT_CBSS_ETA                         200   //width of gaussian window. Who knows what a sane value is.
+#define OBTAIN_DEFAULT_CBSS_ETA                         100   //width of gaussian window. Who knows what a sane value is. Larger number is narrower window
+#define OBTAIN_DEFAULT_BEAT_PREDICTION_ADJUSTMENT       0     //oss samples earlier than detected
+#define OBTAIN_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX     3     //
+#define OBTAIN_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH    10    //
 
 typedef struct Opaque_Obtain_Struct Obtain;
 
@@ -126,6 +129,13 @@ void      obtain_set_log_gaussian_tempo_weight_mean (Obtain* self, double bpm);
 double    obtain_get_log_gaussian_tempo_weight_mean (Obtain* self);
 void      obtain_set_log_gaussian_tempo_weight_width(Obtain* self, double bpm);
 double    obtain_get_log_gaussian_tempo_weight_width(Obtain* self);
+
+void      obtain_set_beat_prediction_adjustment     (Obtain* self, int oss_samples_earlier);
+int       obtain_get_beat_prediction_adjustment     (Obtain* self);
+void      obtain_set_predicted_beat_trigger_index   (Obtain* self, int index);
+int       obtain_get_predicted_beat_trigger_index   (Obtain* self);
+void      obtain_set_predicted_beat_gaussian_width  (Obtain* self, double width);
+double    obtain_get_predicted_beat_gaussian_width  (Obtain* self);
 
 void                      obtain_set_tracking_mode            (Obtain* self, obtain_tracking_mode_t mode);
 obtain_tracking_mode_t    obtain_get_tracking_mode            (Obtain* self);
