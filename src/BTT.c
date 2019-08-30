@@ -135,7 +135,7 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       btt_set_min_tempo                       (self, BTT_DEFAULT_MIN_TEMPO);
       btt_set_max_tempo                       (self, BTT_DEFAULT_MAX_TEMPO);
       btt_set_spectral_compression_gamma      (self, BTT_DEFAULT_SPECTRAL_COMPRESSION_GAMMA);
-      btt_set_autocorrelation_exponent        (self, BTT_DEFAULT_CORRELATION_EXPONENT);
+      btt_set_autocorrelation_exponent        (self, BTT_DEFAULT_AUTOCORRELATION_EXPONENT);
       btt_set_num_tempo_candidates            (self, BTT_DEFAULT_NUM_TEMPO_CANDIDATES);
       btt_set_tracking_mode                   (self, BTT_DEFAULT_TRACKING_MODE);
       btt_set_oss_filter_cutoff               (self, BTT_DEFAULT_OSS_FILTER_CUTOFF);

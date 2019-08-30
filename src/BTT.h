@@ -57,7 +57,7 @@ typedef enum
 #define BTT_DEFAULT_MIN_TEMPO                        50    // BPM
 #define BTT_DEFAULT_MAX_TEMPO                        200   // BPM
 #define BTT_DEFAULT_SPECTRAL_COMPRESSION_GAMMA       0     // COMPRESSED(spectrum) = log(1+gamma|spectrum|) / log(1+gamma)
-#define BTT_DEFAULT_CORRELATION_EXPONENT             0.5   // for generalized autocorrelation
+#define BTT_DEFAULT_AUTOCORRELATION_EXPONENT         0.5   // for generalized autocorrelation
 #define BTT_DEFAULT_NUM_TEMPO_CANDIDATES             10    //
 #define BTT_DEFAULT_TRACKING_MODE                    BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING
 #define BTT_DEFAULT_OSS_FILTER_CUTOFF                10    // Hz

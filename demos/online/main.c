@@ -65,7 +65,7 @@ param_t params[] =
     .set = (funct)btt_set_autocorrelation_exponent,
     .get = (funct)btt_get_autocorrelation_exponent,
     .type = 'd',
-    .init = BTT_DEFAULT_CORRELATION_EXPONENT,
+    .init = BTT_DEFAULT_AUTOCORRELATION_EXPONENT,
     .increment = 0.1,
     .name = "btt_set_autocorrelation_exponent",
   },
