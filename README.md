@@ -76,7 +76,7 @@ For each window, the specturm is squashed down (compressed) logarithimcally usin
 COMPRESSED(spectrum) = log(1+gamma|spectrum|) / log(1+gamma)
 Zero indicates no compression, and higher values of gamma have diminishing returns. I'm not sure it makes much difference in the onset detection, and setting it to 0 saves two expensive calls to log() per audio sample.
 
-### OSS Filter Cutoff
+#### OSS Filter Cutoff
 ```c 
 void      btt_set_oss_filter_cutoff              (BTT* self, double Hz);
 double    btt_get_oss_filter_cutoff              (BTT* self);
@@ -84,7 +84,7 @@ double    btt_get_oss_filter_cutoff              (BTT* self);
 ```
 The cutoff frequency of the low-pass filter applied to the spectral flux. You don't normally expect onsets more frequently than 10 or 15 Hz, so you might as well filter out everything above that. The filter order is an argument to btt_new(), and is constant for the life of the object.
 
-### Onset Threshold
+##### Onset Threshold
 ```c 
 void      btt_set_onset_threshold                (BTT* self, double num_std_devs);
 double    btt_get_onset_threshold                (BTT* self);
