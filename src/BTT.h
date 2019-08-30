@@ -64,9 +64,6 @@ typedef enum
 #define BTT_DEFAULT_USE_AMP_NORMALIZATION            0     // false
 #define BTT_DEFAULT_ONSET_TREHSHOLD                  1     // std devs above mean OSS signal
 #define BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD     -74   // dB per freq bin
-#define BTT_DEFAULT_XCORR_NUM_PULSES                 8     //
-#define BTT_DEFAULT_XCORR_PULSE_LOCATIONS            {0, 1, 1.5, 2, 3, 4, 4.5, 6}
-#define BTT_DEFAULT_XCORR_PULSE_VALUES               {2.0, 1.0, 0.5, 1.5, 1.5, 0.5, 0.5, 0.5}
 #define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   100   // supress harmonics by favoring tempos closer to 100
 #define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH  75    // oss samples starndard deviation
 #define BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY   0.999 //
@@ -77,6 +74,10 @@ typedef enum
 #define BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX     20    //
 #define BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH    10    // oss samples
 #define BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION   40    // percent of beat at current tempo
+
+#define BTT_DEFAULT_XCORR_NUM_PULSES                 8     //
+#define BTT_DEFAULT_XCORR_PULSE_LOCATIONS            {0, 1, 1.5, 2, 3, 4, 4.5, 6}
+#define BTT_DEFAULT_XCORR_PULSE_VALUES               {2.0, 1.0, 0.5, 1.5, 1.5, 0.5, 0.5, 0.5}
 
 /*--------------------------------------------------------------------*/
 typedef struct Opaque_BTT_Struct BTT;
@@ -93,28 +94,28 @@ BTT*      btt_new_default                        ();
 BTT*      btt_destroy                            (BTT* self);
 void      btt_process                            (BTT* self, dft_sample_t* input, int num_samples);
 double    btt_get_sample_rate                    (BTT* self);
+
+/* onset detection adjustments */
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);
 int       btt_get_use_amplitude_normalization    (BTT* self);
 void      btt_set_spectral_compression_gamma     (BTT* self, double gamma);
 double    btt_get_spectral_compression_gamma     (BTT* self);
 void      btt_set_oss_filter_cutoff              (BTT* self, double Hz);
 double    btt_get_oss_filter_cutoff              (BTT* self);
+void      btt_set_onset_threshold                (BTT* self, double num_std_devs);
+double    btt_get_onset_threshold                (BTT* self);
+void      btt_set_noise_cancellation_threshold   (BTT* self, double dB /*probably negative*/);
+double    btt_get_noise_cancellation_threshold   (BTT* self);
+
+/* tempo tracking adjustments */
 void      btt_set_autocorrelation_exponent       (BTT* self, double exponent);
 double    btt_get_autocorrelation_exponent       (BTT* self);
 void      btt_set_min_tempo                      (BTT* self, double min_tempo);
 double    btt_get_min_tempo                      (BTT* self);
 void      btt_set_max_tempo                      (BTT* self, double max_tempo);
 double    btt_get_max_tempo                      (BTT* self);
-void      btt_set_onset_threshold                (BTT* self, double num_std_devs);
-double    btt_get_onset_threshold                (BTT* self);
 void      btt_set_num_tempo_candidates           (BTT* self, int num_candidates);
 int       btt_get_num_tempo_candidates           (BTT* self);
-void      btt_set_noise_cancellation_threshold   (BTT* self, double dB /*probably negative*/);
-double    btt_get_noise_cancellation_threshold   (BTT* self);
-void      btt_set_cbss_alpha                     (BTT* self, double alpha);
-double    btt_get_cbss_alpha                     (BTT* self);
-void      btt_set_cbss_eta                       (BTT* self, double eta);
-double    btt_get_cbss_eta                       (BTT* self);
 void      btt_set_gaussian_tempo_histogram_decay (BTT* self, double coefficient);
 double    btt_get_gaussian_tempo_histogram_decay (BTT* self);
 void      btt_set_gaussian_tempo_histogram_width (BTT* self, double width);
@@ -123,6 +124,12 @@ void      btt_set_log_gaussian_tempo_weight_mean (BTT* self, double bpm);
 double    btt_get_log_gaussian_tempo_weight_mean (BTT* self);
 void      btt_set_log_gaussian_tempo_weight_width(BTT* self, double bpm);
 double    btt_get_log_gaussian_tempo_weight_width(BTT* self);
+
+/* beat tracking adjustments */
+void      btt_set_cbss_alpha                     (BTT* self, double alpha);
+double    btt_get_cbss_alpha                     (BTT* self);
+void      btt_set_cbss_eta                       (BTT* self, double eta);
+double    btt_get_cbss_eta                       (BTT* self);
 void      btt_set_beat_prediction_adjustment     (BTT* self, int oss_samples_earlier);
 int       btt_get_beat_prediction_adjustment     (BTT* self);
 void      btt_set_predicted_beat_trigger_index   (BTT* self, int index);
