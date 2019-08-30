@@ -49,7 +49,7 @@ void beat_detected_callback (void* SELF, unsigned long long sample_time)
 
 ## Onset Detection
 ##### Overview
-This library follows the method described here and similarly elsewhere:
+For onset detection, this library follows the method described here and similarly elsewhere:
 http://www.ijsps.com/uploadfile/2017/1220/20171220034151817.pdf
 
 This library uses the spectral flux of the audio signal to detect onsets. It takes a windowed DFT of the audio, and in each window, it adds up all of the bins that have more energy than they did previously. This results in a signal, the 'onset signal (oss)' that should spike when there is a new note. This signal is low-pass filtered to remove noise. Then an onset is reported when the signal rises above a threshold that is a certain number of standard deviations over the running mean of the signal.
@@ -98,10 +98,10 @@ Your onset callback will be called whenever the onset signal rises above the ons
 
 ## Tempo Tracking
 ##### Overview
-This library uses the method described in this paper:
+For tempo tracking, this library uses the method described in this paper:
 http://webhome.csc.uvic.ca/~gtzan/output/taslp2014-tempo-gtzan.pdf
 
-For each new sample in the oss, the oss is autocorrelated, and several of the highest peaks are taken to be candidate tempos. The candidates are scored by cross-correlating the the oss with ideal pulse trains at the respective tempo. The candidate with the highest score is considered to be the current local tempo estimate. The tempo estimator maintains a decaying histogram of tempo estiamtes. For each new estimate, a Gaussian spike whose mean is the new tempo estimate is added into the histogram, and the highest peak in the histogram is taken to be the current tempo of the music.
+At ecah timestep, the oss is autocorrelated, and several of the highest peaks are taken to be candidate tempos. The candidates are scored by cross-correlating the the oss with ideal pulse trains at the respective tempo. The candidate with the highest score is considered to be the current local tempo estimate. The tempo estimator maintains a decaying histogram of tempo estiamtes. For each new estimate, a Gaussian spike whose mean is the new tempo estimate is added into the histogram, and the highest peak in the histogram is taken to be the current tempo of the music.
 
 ##### Autocorrelation Exponent
 ```c 
@@ -133,7 +133,7 @@ void      btt_set_num_tempo_candidates           (BTT* self, int num_candidates)
 int       btt_get_num_tempo_candidates           (BTT* self);
 /*default value: BTT_DEFAULT_NUM_TEMPO_CANDIDATES (10) */
 ```
-For each new oss sample, try this many tempo candidates -- i.e. this many peaks are picked out of the autocorrelation. Scoring candidate tempos is one of the most conputationally expensive parts of this algorithm. On my laptop, the whole algorithm runs in 20% of realtime, and 7% of realtime is spent scoring candidate tempos. Decreasing this will save computational time, at the possible expense of more spurious tempo readings.
+At each time step, try this many tempo candidates -- i.e. this many peaks are picked out of the autocorrelation. Scoring candidate tempos is one of the most conputationally expensive parts of this algorithm. On my laptop, the whole algorithm runs in 20% of realtime, and 7% of realtime is spent scoring candidate tempos. Decreasing this will save computational time, at the possible expense of more spurious tempo readings.
 
 ##### Gaussian Tempo Histogram Decay
 ```c 
@@ -141,7 +141,7 @@ void      btt_set_gaussian_tempo_histogram_decay (BTT* self, double coefficient)
 double    btt_get_gaussian_tempo_histogram_decay (BTT* self);
 /*default value: BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY (0.999) */
 ```
-At each oss sample, multiply the tempo histogram by this value. In the original paper, they use the value 1 (no decay), but that is an offline algorithm that is trying to score a single sone with assumed constant tempo. Lowering this value will make tempo changes be recognized more quickly, but spurious tempo estimates can more easily take over.
+At each oss sample, multiply the tempo histogram by this value. In the original paper, they use the value 1 (no decay), but that is an offline algorithm that is trying to score a single song with assumed constant tempo. Lowering this value will make tempo changes be recognized more quickly, but spurious tempo estimates can more easily take over.
 
 ##### Gaussian Tempo Histogram Width
 ```c 
@@ -168,3 +168,46 @@ double    btt_get_log_gaussian_tempo_weight_width(BTT* self);
 The width of the log-Gaussian tempo histogram weight window.
 
 ## Beat Tracking
+##### Overview
+For beat tracking, this library uses the method described on page 60 of this paper, with small modifications for robustness:
+https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/15050/adam_stark_phd_thesis_2011.pdf?sequence=1
+
+This library calculates a quasi-periodic cumulative beat-strength signal (the cbss), which combines the onset signal with previous values of the cbss from 1 beat in the past.  This creates a signal that spikes every beat. The beat-tracker then cross-correlates the cbss with an impulse train contining 4 clicks, one beat apart. This strenghtens the peaks in the cbss and determines the location of the beats in time. Finally, at every time step, the location of the next beat is predicted by projecting forward the beat location by one beat. This involves adding a Gaussian spike into a buffer...  This is hard to explain. I'm going to make a video.
+
+##### CBSS Alpha
+```c 
+void      btt_set_cbss_alpha                     (BTT* self, double alpha);
+double    btt_get_cbss_alpha                     (BTT* self);
+/*default value: BTT_DEFAULT_CBSS_ALPHA (0.9  BPM) */
+```
+##### CBSS Eta
+```c 
+void      btt_set_cbss_eta                       (BTT* self, double eta);
+double    btt_get_cbss_eta                       (BTT* self);
+/*default value: BTT_DEFAULT_CBSS_ETA (300) */
+```
+##### Beat Prediction Adjustment
+```c 
+void      btt_set_beat_prediction_adjustment     (BTT* self, int oss_samples_earlier);
+int       btt_get_beat_prediction_adjustment     (BTT* self);
+/*default value: BTT_DEFAULT_BEAT_PREDICTION_ADJUSTMENT (10  BPM) */
+```
+##### Predicted Beat Trigger Index
+```c 
+void      btt_set_predicted_beat_trigger_index   (BTT* self, int index);
+int       btt_get_predicted_beat_trigger_index   (BTT* self);
+/*default value: BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX (20  BPM) */
+```
+##### Predicted Beat Gaussian Width
+```c 
+void      btt_set_predicted_beat_gaussian_width  (BTT* self, double width);
+double    btt_get_predicted_beat_gaussian_width  (BTT* self);
+/*default value: BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH (10 cbss samples) */
+```
+##### Ignore Spurious Beats Duration
+```c 
+void      btt_set_ignore_spurious_beats_duration (BTT* self, double percent_of_tempo);
+double    btt_get_ignore_spurious_beats_duration (BTT* self);
+/*default value: BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION (40% of current beat) */
+```
+
