@@ -445,8 +445,12 @@ double     adaptive_threshold_onset_signal(AdaptiveThreshold* self)
 }
 
 /*--------------------------------------------------------------------*/
-//#include <stdio.h> //testing only
-//returns 1 or -1 to indicate onset signal transitioned past threshhold, else 0
+double             adaptive_threshold_mean          (AdaptiveThreshold* self)
+{
+  return moving_average_mean(self->avg);
+}
+
+/*--------------------------------------------------------------------*/
 double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
 {
   double     next   = 0;
@@ -464,8 +468,6 @@ double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
       result = next;
 
   self->onset_signal = next;
-  
-  //fprintf(stderr, "%f %f %f\r\n", self->filtered_x, moving_average_mean(self->avg), moving_average_mean(self->avg) + moving_average_std_dev(self->avg) * self->threshold);
   
   return result;
 };

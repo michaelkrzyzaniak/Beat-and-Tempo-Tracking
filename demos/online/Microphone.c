@@ -28,7 +28,7 @@ Microphone* mic_destroy         (Microphone* self);
 /*--------------------------------------------------------------------*/
 Microphone* mic_new()
 {
-  Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, 1);
+  Microphone* self = (Microphone*) auAlloc(sizeof(*self), mic_audio_callback, NO, 2);
   
   if(self != NULL)
     {
@@ -79,6 +79,7 @@ Microphone* mic_destroy(Microphone* self)
   return (Microphone*) NULL;
 }
 
+/*--------------------------------------------------------------------*/
 Obtain*           mic_get_obtain        (Microphone* self)
 {
   return self->obtain;
@@ -88,6 +89,13 @@ Obtain*           mic_get_obtain        (Microphone* self)
 int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_channels)
 {
   Microphone* self = (Microphone*)SELF;
+  int frame, channel;
+  
+  //mix to mono without correcting amplitude
+  for(frame=0; frame<num_frames; frame++)
+    for(channel=1; channel<num_channels; channel++)
+      buffer[frame] += buffer[frame * num_channels + channel];
+  
   obtain_process(self->obtain, buffer, num_frames);
   return  num_frames;
 }

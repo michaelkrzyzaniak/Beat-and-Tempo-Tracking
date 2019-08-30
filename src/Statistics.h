@@ -95,6 +95,7 @@ void               adaptive_threshold_set_smoothing (AdaptiveThreshold* self, do
 double             adaptive_threshold_threshold     (AdaptiveThreshold* self);
 void               adaptive_threshold_set_threshold (AdaptiveThreshold* self, double     std_devs);
 double             adaptive_threshold_onset_signal  (AdaptiveThreshold* self);
+double             adaptive_threshold_mean          (AdaptiveThreshold* self);
 double             adaptive_threshold_update        (AdaptiveThreshold* self, double     x);
 
 double             statistics_random_flat(); //(0, 1]

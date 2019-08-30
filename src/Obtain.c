@@ -8,6 +8,8 @@
 #include <string.h> //memset
 
 #include <stdio.h> //fprintf (testing only)
+#include "Network.h" //Testing Only
+#include "OSC.h" //Testing Only
 
 #define BPM_TO_LAG(bpm) (60 * self->oss_sample_rate / ((float)(bpm)))
 #define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
@@ -16,6 +18,10 @@ void obtain_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, dft_s
 void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_sample_t* imag, int N);
 void obtain_tempo_tracking              (Obtain* self);
 void obtain_beat_tracking               (Obtain* self);
+
+//#define DEBUG_ONSETS
+#define DEBUG_TEMPO
+//#define DEBUG_BEATS
 
 /*--------------------------------------------------------------------*/
 struct Opaque_Obtain_Struct
@@ -48,8 +54,8 @@ struct Opaque_Obtain_Struct
 
   unsigned long long num_audio_samples_processed;
   unsigned long long num_oss_frames_processed;
-  unsigned long long next_expected_beat_time;
-  unsigned long long next_expected_half_beat_time;
+  //unsigned long long next_expected_beat_time;
+  //unsigned long long next_expected_half_beat_time;
   float              tempo_bpm;
   int                beat_period_oss_samples;
   int                beat_period_audio_samples;
@@ -65,6 +71,8 @@ struct Opaque_Obtain_Struct
   int                beat_prediction_adjustment;
   int                predicted_beat_trigger_index;
   int                predicted_beat_gaussian_width;
+  unsigned long long ignore_beats_until;
+  double             ignore_beats_for_percent_of_tempo;
   
   obtain_tracking_mode_t   tracking_mode;
   obtain_onset_callback_t  onset_callback;
@@ -73,6 +81,11 @@ struct Opaque_Obtain_Struct
   void* onset_callback_self;
   void* tempo_callback_self;
   void* beat_callback_self;
+  
+  //testing stuff berlow here
+  Network* net;
+  char* osc_buff;
+  int osc_buff_size;
 };
 
 /*--------------------------------------------------------------------*/
@@ -144,6 +157,15 @@ Obtain* obtain_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, i
       obtain_set_onset_tracking_callback         (self, NULL, NULL);
       obtain_set_tempo_tracking_callback         (self, NULL, NULL);
       obtain_set_beat_tracking_callback          (self, NULL, NULL);
+    
+      //testing
+      self->net = net_new();
+      if(self->net == NULL) return obtain_destroy(self);
+      net_udp_connect(self->net, 9876);
+    
+      self->osc_buff_size = 8192; //why not?
+      self->osc_buff = calloc(self->osc_buff_size, sizeof(*self->osc_buff));
+      if(self->osc_buff == NULL) return obtain_destroy(self);
     }
   return self;
 }
@@ -208,8 +230,8 @@ void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_s
   real[0] = 0;
 
   //Normalize -- I'm not sure this is the correct approach here if we expect periods of silence
-  if(self->should_normalize_amplitude)
-    dft_normalize_magnitude(real, n_over_2);
+  //if(self->should_normalize_amplitude)
+    //dft_normalize_magnitude(real, n_over_2);
   
   //perform log compression
   if(self->spectral_compression_gamma > 0)
@@ -238,7 +260,7 @@ void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_s
   //7HZ low-pass filter flux to obtaion OSS, delays oss by filter_order / 2 oss samples
   filter_process_data(self->oss_filter, &flux, 1);
   self->oss[self->oss_index] = flux;
-  ++self->oss_index; self->oss_index %= self->oss_length;
+  //++self->oss_index; self->oss_index %= self->oss_length;
 
   //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~1kb redundant space
   if(flux > 0)
@@ -249,6 +271,17 @@ void obtain_onset_tracking              (Obtain* self, dft_sample_t* real, dft_s
           t -= (filter_get_order(self->oss_filter) / 2) * (self->sample_rate  / self->oss_sample_rate);
           self->onset_callback(self->onset_callback_self, t);
         }
+  
+  
+  /*testing*/
+#if defined DEBUG_ONSETS
+  double oss_thresh_mean = adaptive_threshold_mean(self->onset_threshold);
+  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "oss", "fff", flux, oss_thresh_mean, oss_thresh_mean+adaptive_threshold_threshold(self->onset_threshold));
+  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+#endif
+  /*end testing*/
+  //move this back up later for clarity
+  ++self->oss_index; self->oss_index %= self->oss_length;
 }
 
 /*--------------------------------------------------------------------*/
@@ -344,13 +377,20 @@ void obtain_tempo_tracking              (Obtain* self)
   for(i=0; i<self->num_tempo_candidates; i++)
     {
       score = (score_max[i] / sum_of_score_max) + (score_variance[i] / sum_of_score_variance);
-      if(score > max_score)
+      if(score >= max_score)
         {
           index_of_max_score = i;
           max_score = score;
         }
     }
-  
+
+#if defined DEBUG_TEMPO
+  //testing
+  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "n", "i", self->max_lag - self->min_lag);
+  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+  //end testing
+#endif
+
   //this is way more likely to be because there were no peaks in the autocorrelation
   //(i.e. during silence) than because it was the the true tempo, so reject it.
   //in the future we might need to explicitely count non-zero samples in the OSS
@@ -361,6 +401,9 @@ void obtain_tempo_tracking              (Obtain* self)
   int index_of_max_gaussian = 0;
   float gaussian, log_gaussian;
   float two_sigma_squared = self->gaussian_tempo_histogram_width;
+  log_gaussian = log2(candidate_tempo_lags[index_of_max_score] * self->log_gaussian_tempo_weight_mean);
+  log_gaussian *= log_gaussian;
+  log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width);
   
   /* we could choose even narrower bounds, for example based on the widths of the gaussians or the valid tempo range */
   for(i=self->min_lag; i<self->max_lag; i++)
@@ -369,21 +412,35 @@ void obtain_tempo_tracking              (Obtain* self)
       gaussian *= gaussian;
       gaussian = exp(-gaussian / two_sigma_squared);
     
-    
+    /*
       log_gaussian = log2(i * self->log_gaussian_tempo_weight_mean);
       log_gaussian *= log_gaussian;
       log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width);
-    
+    */
       self->gaussian_tempo_histogram[i] *= self->gaussian_tempo_histogram_decay;
       self->gaussian_tempo_histogram[i] += gaussian * log_gaussian;
       if(self->gaussian_tempo_histogram[i] > self->gaussian_tempo_histogram[index_of_max_gaussian])
         index_of_max_gaussian = i;
+
+#if defined DEBUG_TEMPO
+      //testing
+      int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "t", "f", self->gaussian_tempo_histogram[i]);
+      net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+      //end testing
+#endif
     }
+  
 
   self->tempo_bpm = BPM_TO_LAG(index_of_max_gaussian);
   self->beat_period_oss_samples = index_of_max_gaussian;
   self->beat_period_audio_samples = self->sample_rate * self->beat_period_oss_samples / self->oss_sample_rate;
   
+#if defined DEBUG_TEMPO
+  //testing
+  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "tem", "f", self->tempo_bpm);
+  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+  //end testing
+#endif
   //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
 }
 
@@ -422,13 +479,28 @@ void obtain_beat_tracking               (Obtain* self)
   
   //equation 6, blend score of previous beat with oss
   self->cbss[self->cbss_index] = (self->one_minus_cbss_alpha * self->oss[oss_index]) + (self->cbss_alpha * max_phi);
-  ++self->cbss_index; self->cbss_index %= self->cbss_length;
   
+#if defined DEBUG_BEAT
+  //testing
+  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "cbs", "f",self->cbss[self->cbss_index]);
+  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+  //end testing
+#endif
+  
+  ++self->cbss_index; self->cbss_index %= self->cbss_length;
+
+#if defined DEBUG_BEAT
+  //testing
+  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "n", "i", self->beat_period_oss_samples);
+  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+  //end testing
+#endif
+
   //cross-correlate cbss with pulses
   //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
-  int    num_pulses            = OBTAIN_DEFAULT_XCORR_NUM_PULSES;
-  float  pulse_locations[]     = OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS;
-  float  pulse_values[]        = OBTAIN_DEFAULT_XCORR_PULSE_VALUES;
+  int    num_pulses            = 4;//OBTAIN_DEFAULT_XCORR_NUM_PULSES;
+  float  pulse_locations[]     = {0, 1, 2, 3, 4};//OBTAIN_DEFAULT_XCORR_PULSE_LOCATIONS;
+  float  pulse_values[]        = {1, 1, 1, 1};//OBTAIN_DEFAULT_XCORR_PULSE_VALUES;
   float* signal                = self->cbss;
   int    signal_length         = self->cbss_length;
   int    signal_index          = self->cbss_index;
@@ -451,7 +523,15 @@ void obtain_beat_tracking               (Obtain* self)
           val_of_max_phase = x_corr;
           max_phase = phase;
         }
-      //fprintf(stderr, "%f\r\n", x_corr);
+#if defined DEBUG_BEAT
+      //testing
+      if((self->num_oss_frames_processed % 10) == 0)
+      {
+        int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "x", "f", x_corr);
+        net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+      }
+      //end testing
+#endif
     }
   
   //project beat into the future
@@ -468,7 +548,7 @@ void obtain_beat_tracking               (Obtain* self)
   //the bounds of this loop could be more restrictive
   for(i=0; i<self->cbss_length; i++)
     {
-      gaussian = i-max_phase;
+      gaussian = (i % self->beat_period_oss_samples)-max_phase;
       gaussian *= gaussian;
       gaussian = exp(-gaussian / self->predicted_beat_gaussian_width);
       index = (self->predicted_beat_index + i) % self->cbss_length;
@@ -478,21 +558,38 @@ void obtain_beat_tracking               (Obtain* self)
           max_value = self->predicted_beat_signal[index];
           max_index = i;
         }
+#if defined DEBUG_BEAT
+      //testing
+      if((self->num_oss_frames_processed % 10) == 0)
+      {
+         if(i < 200)
+          {
+          int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "g", "f", self->predicted_beat_signal[index]);
+          net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
+        }
+      }
+    //end testing
+#endif
     }
   
   self->predicted_beat_signal[self->predicted_beat_index] = 0;
   ++self->predicted_beat_index; self->predicted_beat_index %= self->cbss_length;
   
   
-  if(max_index == self->predicted_beat_trigger_index) //maybe a getter_setter for this as well
-    if(self->beat_callback != NULL)
-      {
-        unsigned long long t = self->num_audio_samples_processed;
-        t += (self->predicted_beat_trigger_index) * (self->sample_rate  / self->oss_sample_rate);
-        self->beat_callback (self->beat_callback_self, t);
-        //fprintf(stderr, "Here \r\n");
-      }
-
+  if(max_index == self->predicted_beat_trigger_index)
+    {
+      if(self->num_oss_frames_processed >= self->ignore_beats_until)
+        {
+          self->ignore_beats_until = (int)(self->num_oss_frames_processed + (self->beat_period_oss_samples * 0.4));//ignore_beats_for_percent_of_tempo
+          if(self->beat_callback != NULL)
+            {
+              unsigned long long t = self->num_audio_samples_processed;
+              t += (self->predicted_beat_trigger_index) * (self->sample_rate  / self->oss_sample_rate);
+              self->beat_callback (self->beat_callback_self, t);
+              //fprintf(stderr, "Here \r\n");
+            }
+        }
+    }
 }
 
 /*--------------------------------------------------------------------*/
@@ -581,6 +678,8 @@ double    obtain_get_autocorrelation_exponent     (Obtain* self)
 void      obtain_set_min_tempo                    (Obtain* self, double min_tempo)
 {
   int max_lag = BPM_TO_LAG(min_tempo) + 1;
+  if(max_lag < 0) max_lag = 0;
+  
   if(max_lag > self->oss_length) max_lag = self->oss_length;
   self->max_lag = max_lag;
 }
@@ -664,6 +763,7 @@ double    obtain_get_cbss_alpha                   (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_cbss_eta                     (Obtain* self, double eta)
 {
+  if(eta < 0) eta = 0;
   self->cbss_eta = -eta;
 }
 
@@ -690,6 +790,7 @@ double    obtain_get_gaussian_tempo_histogram_decay         (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_gaussian_tempo_histogram_width         (Obtain* self, double width)
 {
+  if(width < 1) width = 1;
   self->gaussian_tempo_histogram_width = 2 * (width * width);
 }
 
@@ -702,6 +803,7 @@ double    obtain_get_gaussian_tempo_histogram_width         (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_log_gaussian_tempo_weight_mean (Obtain* self, double bpm)
 {
+  if(bpm < 0) bpm = 0;
   double width = obtain_get_log_gaussian_tempo_weight_width(self);
   self->log_gaussian_tempo_weight_mean = 1.0 / BPM_TO_LAG(bpm);
   obtain_set_log_gaussian_tempo_weight_width(self, width);
@@ -743,6 +845,9 @@ int       obtain_get_beat_prediction_adjustment     (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_predicted_beat_trigger_index   (Obtain* self, int index)
 {
+  if(index < 0) index = 0;
+  if(index >= self->cbss_length) index = self->cbss_length - 1;
+  
   self->predicted_beat_trigger_index = index;
 }
 
@@ -755,6 +860,7 @@ int       obtain_get_predicted_beat_trigger_index   (Obtain* self)
 /*--------------------------------------------------------------------*/
 void      obtain_set_predicted_beat_gaussian_width  (Obtain* self, double width)
 {
+  if(width < 1) width = 1;
   self->predicted_beat_gaussian_width = 2 * width * width;
 }
 
