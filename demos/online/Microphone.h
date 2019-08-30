@@ -15,12 +15,12 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include "AudioSuperclass.h"
-#include "../../OBTAIN.h"
+#include "../../BTT.h"
 
 typedef struct OpaqueMicrophoneStruct Microphone;
 
 Microphone*       mic_new               ();
-Obtain*           mic_get_obtain        (Microphone* self);
+BTT*              mic_get_btt           (Microphone* self);
 
 //Microphone*  mic_destroy             (Microphone*      self      );
 //call with self->destroy(self);

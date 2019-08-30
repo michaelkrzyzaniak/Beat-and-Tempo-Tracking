@@ -1,4 +1,4 @@
-#include "../../OBTAIN.h"
+#include "../../BTT.h"
 #include "MKAiff.h"
 #include "Timestamp.h"
 
@@ -8,24 +8,21 @@ void onset_detected_callback(void* SELF, unsigned long long sample_time);
 void beat_detected_callback (void* SELF, unsigned long long sample_time);
 
 /*--------------------------------------------------------------------*/
-int main(void)
+int main(int argc, char* argv[])
 {
-  MKAiff* aiff = aiffWithContentsOfFile("audio/beat.aiff");
-  if(aiff == NULL){perror("unable to open audio/beat.aiff"); exit(-1);}
+  if(argc < 2)
+    {fprintf(stderr, "Please specify an aiff or wav file you would like to process.\r\n"); exit(-1);}
+  
+  MKAiff* aiff = aiffWithContentsOfFile(argv[1]);
+  if(aiff == NULL){perror("unable to open audio file"); exit(-1);}
   aiffMakeMono(aiff);
   float secs = aiffDurationInSeconds(aiff);
   double sample_rate = aiffSampleRate(aiff);
-  if(sample_rate != OBTAIN_SUGGESTED_SAMPLE_RATE)
-    {fprintf(stderr, "Audio file should be %lf Hz but is %lf. Aborting.\r\n", (double)OBTAIN_SUGGESTED_SAMPLE_RATE, sample_rate); exit(-1);}
+  if(sample_rate != BTT_SUGGESTED_SAMPLE_RATE)
+    {fprintf(stderr, "Audio file should be %lf Hz but is %lf. Aborting.\r\n", (double)BTT_SUGGESTED_SAMPLE_RATE, sample_rate); exit(-1);}
 
-  Obtain* obtain = obtain_new(OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_LEN,
-                              OBTAIN_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP,
-                              OBTAIN_SUGGESTED_OSS_FILTER_ORDER,
-                              OBTAIN_SUGGESTED_OSS_LENGTH,
-                              OBTAIN_SUGGESTED_ONSET_THRESHOLD_N,
-                              OBTAIN_SUGGESTED_CBSS_LENGTH,
-                              sample_rate);
-  if(obtain == NULL){perror("unable to create obtain object"); exit(-2);}
+  BTT* btt = btt_new_default();
+  if(btt == NULL){perror("unable to create btt object"); exit(-2);}
   
   MKAiff* onset_aiff = aiffWithDurationInSeconds(1, sample_rate, 16, secs+1);
   if(onset_aiff == NULL){perror("unable to create onset_aiff obejct"); exit(-1);}
@@ -36,8 +33,8 @@ int main(void)
   aiffAppendSilenceInSeconds(onset_aiff, secs);
   aiffAppendSilenceInSeconds(beat_aiff , secs);
 
-  obtain_set_onset_tracking_callback  (obtain, onset_detected_callback, onset_aiff);
-  obtain_set_beat_tracking_callback   (obtain, beat_detected_callback , beat_aiff);
+  btt_set_onset_tracking_callback  (btt, onset_detected_callback, onset_aiff);
+  btt_set_beat_tracking_callback   (btt, beat_detected_callback , beat_aiff);
   
   dft_sample_t* buffer = calloc(AUDIO_BUFFER_SIZE, sizeof(*buffer));
   if(buffer == NULL){perror("unable to allocate buffer"); exit(-3);}
@@ -46,7 +43,7 @@ int main(void)
   for(;;)
     {
       int num_samples = aiffReadFloatingPointSamplesAtPlayhead(aiff, buffer, AUDIO_BUFFER_SIZE, aiffYes);
-      obtain_process(obtain, buffer, num_samples);
+      btt_process(btt, buffer, num_samples);
       if(num_samples < AUDIO_BUFFER_SIZE)  break;
     }
   timestamp_microsecs_t end = timestamp_get_current_time();

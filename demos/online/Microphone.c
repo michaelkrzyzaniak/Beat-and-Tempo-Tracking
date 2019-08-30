@@ -17,7 +17,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
 struct OpaqueMicrophoneStruct
 {
   AUDIO_GUTS            ;
-  Obtain* obtain        ;
+  BTT* btt        ;
   Click*  click         ;
 };
 
@@ -38,12 +38,12 @@ Microphone* mic_new()
       if(self->click == NULL)
         return (Microphone*)auDestroy((Audio*)self);
     
-      self->obtain = obtain_new_default();
-      if(self->obtain == NULL)
+      self->btt = btt_new_default();
+      if(self->btt == NULL)
         return (Microphone*)auDestroy((Audio*)self);
     
-      obtain_set_onset_tracking_callback  (self->obtain, mic_onset_detected_callback, self);
-      obtain_set_beat_tracking_callback   (self->obtain, mic_beat_detected_callback , self);
+      btt_set_onset_tracking_callback  (self->btt, mic_onset_detected_callback, self);
+      btt_set_beat_tracking_callback   (self->btt, mic_beat_detected_callback , self);
     }
   
   //there should be a play callback that I can intercept and do this there.
@@ -72,7 +72,7 @@ Microphone* mic_destroy(Microphone* self)
 {
   if(self != NULL)
     {
-      obtain_destroy(self->obtain);
+      btt_destroy(self->btt);
       auDestroy((Audio*)self->click);
     }
     
@@ -80,9 +80,9 @@ Microphone* mic_destroy(Microphone* self)
 }
 
 /*--------------------------------------------------------------------*/
-Obtain*           mic_get_obtain        (Microphone* self)
+BTT*           mic_get_btt        (Microphone* self)
 {
-  return self->obtain;
+  return self->btt;
 }
 
 /*--------------------------------------------------------------------*/
@@ -96,7 +96,7 @@ int mic_audio_callback(void* SELF, auSample_t* buffer, int num_frames, int num_c
     for(channel=1; channel<num_channels; channel++)
       buffer[frame] += buffer[frame * num_channels + channel];
   
-  obtain_process(self->obtain, buffer, num_frames);
+  btt_process(self->btt, buffer, num_frames);
   return  num_frames;
 }
 

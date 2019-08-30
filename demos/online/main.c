@@ -1,12 +1,12 @@
 #include "Microphone.h"
 
-void iHateCanonicalInputProcessingIReallyReallyDo(void);
-void makeStdinCannonicalAgain();
+void i_hate_canonical_input_processing(void);
+void make_stdin_cannonical_again();
 
-typedef void   (*double_setter)(Obtain* self, double val);
-typedef double (*double_getter)(Obtain* self);
-typedef void   (*int_setter)   (Obtain* self, int val);
-typedef int    (*int_getter)   (Obtain* self);
+typedef void   (*double_setter)(BTT* self, double val);
+typedef double (*double_getter)(BTT* self);
+typedef void   (*int_setter)   (BTT* self, int val);
+typedef int    (*int_getter)   (BTT* self);
 typedef void   (*funct)        (void);
 
 typedef struct parameter_struct
@@ -16,163 +16,173 @@ typedef struct parameter_struct
   char   type;
   double init;
   double increment;
-  char   name[100];
+  char   name[128];
 }param_t;
 
 param_t params[] =
 {
   {
-    .set = (funct)obtain_set_use_amplitude_normalization,
-    .get = (funct)obtain_get_use_amplitude_normalization,
+    .set = (funct)btt_set_use_amplitude_normalization,
+    .get = (funct)btt_get_use_amplitude_normalization,
     .type = 'i',
-    .init = OBTAIN_DEFAULT_USE_AMP_NORMALIZATION,
+    .init = BTT_DEFAULT_USE_AMP_NORMALIZATION,
     .increment = 1,
-    .name = "USE_AMP_NORMALIZATION",
+    .name = "btt_set_use_amplitude_normalization",
   },
   {
-    .set = (funct)obtain_set_spectral_compression_gamma,
-    .get = (funct)obtain_get_spectral_compression_gamma,
+    .set = (funct)btt_set_spectral_compression_gamma,
+    .get = (funct)btt_get_spectral_compression_gamma,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_SPECTRAL_COMPRESSION_GAMMA,
+    .init = BTT_DEFAULT_SPECTRAL_COMPRESSION_GAMMA,
     .increment = 0.05,
-    .name = "SPECTRAL_COMPRESSION_GAMMA",
+    .name = "btt_set_spectral_compression_gamma",
   },
   {
-    .set = (funct)obtain_set_oss_filter_cutoff,
-    .get = (funct)obtain_get_oss_filter_cutoff,
+    .set = (funct)btt_set_oss_filter_cutoff,
+    .get = (funct)btt_get_oss_filter_cutoff,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_OSS_FILTER_CUTOFF,
+    .init = BTT_DEFAULT_OSS_FILTER_CUTOFF,
     .increment = 0.5,
-    .name = "OSS_FILTER_CUTOFF",
+    .name = "btt_set_oss_filter_cutoff",
   },
   {
-    .set = (funct)obtain_set_onset_threshold,
-    .get = (funct)obtain_get_onset_threshold,
+    .set = (funct)btt_set_onset_threshold,
+    .get = (funct)btt_get_onset_threshold,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_ONSET_TREHSHOLD,
+    .init = BTT_DEFAULT_ONSET_TREHSHOLD,
     .increment = 0.1,
-    .name = "ONSET_TREHSHOLD",
+    .name = "btt_set_onset_threshold",
   },
   {
-    .set = (funct)obtain_set_noise_cancellation_threshold,
-    .get = (funct)obtain_get_noise_cancellation_threshold,
+    .set = (funct)btt_set_noise_cancellation_threshold,
+    .get = (funct)btt_get_noise_cancellation_threshold,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_NOISE_CANCELLATION_THRESHOLD,
+    .init = BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD,
     .increment = 1,
-    .name = "NOISE_CANCELLATION_THRESHOLD",
+    .name = "btt_set_noise_cancellation_threshold",
   },
   {
-    .set = (funct)obtain_set_autocorrelation_exponent,
-    .get = (funct)obtain_get_autocorrelation_exponent,
+    .set = (funct)btt_set_autocorrelation_exponent,
+    .get = (funct)btt_get_autocorrelation_exponent,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_CORRELATION_EXPONENT,
+    .init = BTT_DEFAULT_CORRELATION_EXPONENT,
     .increment = 0.1,
-    .name = "AUTOCORRELATION_EXPONENT",
+    .name = "btt_set_autocorrelation_exponent",
   },
   {
-    .set = (funct)obtain_set_min_tempo,
-    .get = (funct)obtain_get_min_tempo,
+    .set = (funct)btt_set_min_tempo,
+    .get = (funct)btt_get_min_tempo,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_MIN_TEMPO,
+    .init = BTT_DEFAULT_MIN_TEMPO,
     .increment = 4,
-    .name = "MIN_TEMPO",
+    .name = "btt_set_min_tempo",
   },
   {
-    .set = (funct)obtain_set_max_tempo,
-    .get = (funct)obtain_get_max_tempo,
+    .set = (funct)btt_set_max_tempo,
+    .get = (funct)btt_get_max_tempo,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_MAX_TEMPO,
+    .init = BTT_DEFAULT_MAX_TEMPO,
     .increment = 4,
-    .name = "MAX_TEMPO",
+    .name = "btt_set_max_tempo",
   },
   {
-    .set = (funct)obtain_set_num_tempo_candidates,
-    .get = (funct)obtain_get_num_tempo_candidates,
+    .set = (funct)btt_set_num_tempo_candidates,
+    .get = (funct)btt_get_num_tempo_candidates,
     .type = 'i',
-    .init = OBTAIN_DEFAULT_NUM_TEMPO_CANDIDATES,
+    .init = BTT_DEFAULT_NUM_TEMPO_CANDIDATES,
     .increment = 1,
-    .name = "NUM_TEMPO_CANDIDATES",
+    .name = "btt_set_num_tempo_candidates",
   },
   {
-    .set = (funct)obtain_set_gaussian_tempo_histogram_decay,
-    .get = (funct)obtain_get_gaussian_tempo_histogram_decay,
+    .set = (funct)btt_set_gaussian_tempo_histogram_decay,
+    .get = (funct)btt_get_gaussian_tempo_histogram_decay,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY,
+    .init = BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY,
     .increment = 0.00001,
-    .name = "GAUSSIAN_TEMPO_HISTOGRAM_DECAY",
+    .name = "btt_set_gaussian_tempo_histogram_decay",
   },
   {
-    .set = (funct)obtain_set_gaussian_tempo_histogram_width,
-    .get = (funct)obtain_get_gaussian_tempo_histogram_width,
+    .set = (funct)btt_set_gaussian_tempo_histogram_width,
+    .get = (funct)btt_get_gaussian_tempo_histogram_width,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH,
+    .init = BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH,
     .increment = 0.5,
-    .name = "GAUSSIAN_TEMPO_HISTOGRAM_WIDTH",
+    .name = "btt_set_gaussian_tempo_histogram_width",
   },
   {
-    .set = (funct)obtain_set_log_gaussian_tempo_weight_mean,
-    .get = (funct)obtain_get_log_gaussian_tempo_weight_mean,
+    .set = (funct)btt_set_log_gaussian_tempo_weight_mean,
+    .get = (funct)btt_get_log_gaussian_tempo_weight_mean,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN,
+    .init = BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN,
     .increment = 4,
-    .name = "LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN",
+    .name = "btt_set_log_gaussian_tempo_weight_mean",
   },
   {
-    .set = (funct)obtain_set_log_gaussian_tempo_weight_width,
-    .get = (funct)obtain_get_log_gaussian_tempo_weight_width,
+    .set = (funct)btt_set_log_gaussian_tempo_weight_width,
+    .get = (funct)btt_get_log_gaussian_tempo_weight_width,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH,
+    .init = BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH,
     .increment = 4,
-    .name = "LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH",
+    .name = "btt_set_log_gaussian_tempo_weight_width",
   },
   {
-    .set = (funct)obtain_set_cbss_alpha,
-    .get = (funct)obtain_get_cbss_alpha,
+    .set = (funct)btt_set_cbss_alpha,
+    .get = (funct)btt_get_cbss_alpha,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_CBSS_ALPHA,
+    .init = BTT_DEFAULT_CBSS_ALPHA,
     .increment = 0.01,
-    .name = "CBSS_ALPHA",
+    .name = "btt_set_cbss_alpha",
   },
   {
-    .set = (funct)obtain_set_cbss_eta,
-    .get = (funct)obtain_get_cbss_eta,
+    .set = (funct)btt_set_cbss_eta,
+    .get = (funct)btt_get_cbss_eta,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_CBSS_ETA,
+    .init = BTT_DEFAULT_CBSS_ETA,
     .increment = 5,
-    .name = "CBSS_ETA",
+    .name = "btt_set_cbss_eta",
   },
   {
-    .set = (funct)obtain_set_beat_prediction_adjustment,
-    .get = (funct)obtain_get_beat_prediction_adjustment,
+    .set = (funct)btt_set_beat_prediction_adjustment,
+    .get = (funct)btt_get_beat_prediction_adjustment,
     .type = 'i',
-    .init = OBTAIN_DEFAULT_BEAT_PREDICTION_ADJUSTMENT,
+    .init = BTT_DEFAULT_BEAT_PREDICTION_ADJUSTMENT,
     .increment = 1,
-    .name = "BEAT_PREDICTION_ADJUSTMENT",
+    .name = "btt_set_beat_prediction_adjustment",
   },
   {
-    .set = (funct)obtain_set_predicted_beat_trigger_index,
-    .get = (funct)obtain_get_predicted_beat_trigger_index,
+    .set = (funct)btt_set_predicted_beat_trigger_index,
+    .get = (funct)btt_get_predicted_beat_trigger_index,
     .type = 'i',
-    .init = OBTAIN_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX,
+    .init = BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX,
     .increment = 1,
-    .name = "PREDICTED_BEAT_TRIGGER_INDEX",
+    .name = "btt_set_predicted_beat_trigger_index",
   },
   {
-    .set = (funct)obtain_set_predicted_beat_gaussian_width,
-    .get = (funct)obtain_get_predicted_beat_gaussian_width,
+    .set = (funct)btt_set_predicted_beat_gaussian_width,
+    .get = (funct)btt_get_predicted_beat_gaussian_width,
     .type = 'd',
-    .init = OBTAIN_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH,
+    .init = BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH,
     .increment = 1,
-    .name = "PREDICTED_BEAT_GAUSSIAN_WIDTH",
+    .name = "btt_set_predicted_beat_gaussian_width",
+  },
+  {
+    .set = (funct)btt_set_ignore_spurious_beats_duration,
+    .get = (funct)btt_get_ignore_spurious_beats_duration,
+    .type = 'd',
+    .init = BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION,
+    .increment = 5,
+    .name = "btt_set_ignore_spurious_beats_duration",
   },
 };
 
-int num_params = 18;//sizeof(params) / sizeof(params[0]);
+int num_params = 19; //sizeof(params) / sizeof(params[0]);
 
 /*--------------------------------------------------------------------*/
 int main(void)
 {
-  iHateCanonicalInputProcessingIReallyReallyDo();
+  i_hate_canonical_input_processing();
+  
+  fprintf(stderr, "'q' to quit\r\n'<' or '>' to scroll through paramaters\r\n'+' or '-' to change the parameter values\r\n");
   
   int param_index = 0;
   double increment;
@@ -182,7 +192,7 @@ int main(void)
   Microphone* mic = mic_new();
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   
-  Obtain* obtain = mic_get_obtain(mic);
+  BTT* btt = mic_get_btt(mic);
   
   auPlay((Audio*)mic);
   
@@ -219,9 +229,9 @@ int main(void)
           case 'd': /* cascade */
           case 'D':
             if(p.type == 'i')
-              ((int_setter) p.set)(obtain, p.init);
+              ((int_setter) p.set)(btt, p.init);
             else if(p.type == 'd')
-              ((double_setter) p.set)(obtain, p.init);
+              ((double_setter) p.set)(btt, p.init);
             break;
 
           case 'q': /* cascade */
@@ -234,21 +244,21 @@ int main(void)
 
       if(p.type == 'i')
         {
-          val = ((int_getter) p.get)(obtain);
-          ((int_setter) p.set)(obtain, val + increment);
-          val = ((int_getter) p.get)(obtain);
+          val = ((int_getter) p.get)(btt);
+          ((int_setter) p.set)(btt, val + increment);
+          val = ((int_getter) p.get)(btt);
         }
       else if(p.type == 'd')
         {
-           val = ((double_getter) p.get)(obtain);
-          ((double_setter) p.set)(obtain, val + increment);
-          val = ((double_getter) p.get)(obtain);
+           val = ((double_getter) p.get)(btt);
+          ((double_setter) p.set)(btt, val + increment);
+          val = ((double_getter) p.get)(btt);
         }
-      fprintf(stderr, "%s: %lf\r\n", p.name, val);
+      fprintf(stderr, "%s(btt, %lf);\r\n", p.name, val);
     }
   
  out:
-  makeStdinCannonicalAgain();
+  make_stdin_cannonical_again();
 }
 
 
@@ -260,32 +270,32 @@ int main(void)
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-struct termios oldTerminalAttributes;
+struct termios old_terminal_attributes;
 
-void iHateCanonicalInputProcessingIReallyReallyDo(void)
+void i_hate_canonical_input_processing(void)
 {
   int error;
-  struct termios newTerminalAttributes;
+  struct termios new_terminal_attributes;
   
   int fd = fcntl(STDIN_FILENO,  F_DUPFD, 0);
   
-  error = tcgetattr(fd, &(oldTerminalAttributes));
+  error = tcgetattr(fd, &(old_terminal_attributes));
   if(error == -1) {  fprintf(stderr, "Error getting serial terminal attributes\r\n"); return;}
   
-  newTerminalAttributes = oldTerminalAttributes;
+  new_terminal_attributes = old_terminal_attributes;
   
-  cfmakeraw(&newTerminalAttributes);
+  cfmakeraw(&new_terminal_attributes);
   
-  error = tcsetattr(fd, TCSANOW, &newTerminalAttributes);
+  error = tcsetattr(fd, TCSANOW, &new_terminal_attributes);
   if(error == -1) {  fprintf(stderr,  "Error setting serial attributes\r\n"); return; }
 }
 
 /*--------------------------------------------------------------------*/
-void makeStdinCannonicalAgain()
+void make_stdin_cannonical_again()
 {
   int fd = fcntl(STDIN_FILENO,  F_DUPFD, 0);
   
-  if (tcsetattr(fd, TCSANOW, &oldTerminalAttributes) == -1)
+  if (tcsetattr(fd, TCSANOW, &old_terminal_attributes) == -1)
     fprintf(stderr,  "Error setting serial attributes\r\n");
 }
 
