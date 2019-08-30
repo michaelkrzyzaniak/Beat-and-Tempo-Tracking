@@ -45,7 +45,86 @@ void beat_detected_callback (void* SELF, unsigned long long sample_time)
 }
 ```
 
-## Constructor, Destructor, and Configuration
+## Constructor, Destructor, Processing Audio, and Configuration
+##### Overview
+
+##### New
+```c
+BTT*      btt_new                                (int spectral_flux_stft_len, int spectral_flux_stft_overlap,
+                                                  int oss_filter_order      , int oss_length,
+                                                  int cbss_length           , int onset_threshold_len, double sample_rate);
+```
+This function creates a new beat tracking object.
+Args:
+* spectral_flux_stft_len: the window size for the STFT used to calculate the onset signal, described in the "Onset Detection" section overview, below. Suggested value is BTT_SUGGESTED_SPECTRAL_FLUX_STFT_LEN (1024 audio samples)
+* spectral_flux_stft_overlap: The overlap factor for the STFT.  Suggested value is  BTT_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP (8, i.e. 12.5% overlap, or  a hop of 128 audio samples for the default window length)
+* oss_filter_order the order of the low-pass filter that is applied to the oss, and whose function is described in the section entitled "OSS Filter Cutoff" below. Suggested value is BTT_SUGGESTED_OSS_FILTER_ORDER (15). This value should be odd.
+* oss_length: the nuber of oss samples to accumulate for analysis. Suggested value is BTT_SUGGESTED_OSS_LENGTH (1024 samples).
+* cbss_length: the nuber of cbss samples to accumulate for analysis. Suggested value is BTT_SUGGESTED_CBSS_LENGTH (1024 samples).
+* onset_threshold_len: the size of the moving average described in the "Onset Threshold" section below. Suggested value is BTT_SUGGESTED_ONSET_THRESHOLD_N (1024 samples)
+* sample_rate: the audio sample rate for audio samples passed to btt_process(). Suggested value is BTT_SUGGESTED_SAMPLE_RATE (44100 Hz)
+
+Returns: A fully initalized BTT object.
+
+Many of the arguments to this function interact in complex ways and affect the performance of the algorithm in ways that are difficult to predict, so you should usually use btt_new_default() unless you know what you are doing. 
+
+##### New Default
+```c
+BTT*      btt_new_default                        ();
+/* equivalent to */
+BTT* btt = btt_new(BTT_SUGGESTED_SPECTRAL_FLUX_STFT_LEN,
+                   BTT_SUGGESTED_SPECTRAL_FLUX_STFT_OVERLAP,
+                   BTT_SUGGESTED_OSS_FILTER_ORDER,
+                   BTT_SUGGESTED_OSS_LENGTH,
+                   BTT_SUGGESTED_ONSET_THRESHOLD_N,
+                   BTT_SUGGESTED_CBSS_LENGTH,
+                   BTT_SUGGESTED_SAMPLE_RATE);
+```
+See btt_new above for more information.
+
+##### Destroy
+```c
+BTT*      btt_destroy                            (BTT* self);
+```
+Free the BTT object and deallocate all of its internal resources. Returns (BTT*) NULL; It is good practice to assign to result to the object you are destroying, e.g.
+btt = btt_destroy(btt);
+
+##### Process
+```c
+void      btt_process                            (BTT* self, dft_sample_t* input, int num_samples);
+```
+Process audio data
+
+##### Tracking Modes
+```c
+typedef enum
+{
+  BTT_ONSET_TRACKING,
+  BTT_ONSET_AND_TEMPO_TRACKING,
+  BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
+}btt_tracking_mode_t;
+
+void                 btt_set_tracking_mode            (BTT* self, btt_tracking_mode_t mode);
+btt_tracking_mode_t  btt_get_tracking_mode            (BTT* self);
+/*default value: BTT_DEFAULT_TRACKING_MODE (BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING)*/
+```
+Set the tracking mode.  This is used to turn off parts of the algorithm that you don't need. Default is 
+
+##### Callback Functions
+```c
+typedef void        (*btt_onset_callback_t)           (void* SELF, unsigned long long sample_time);
+void                 btt_set_onset_tracking_callback  (BTT*  self, btt_onset_callback_t callback, void* callback_self);
+btt_onset_callback_t btt_get_onset_tracking_callback  (BTT*  self, void** returned_callback_self);
+
+typedef void         (*btt_tempo_callback_t)          (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples);
+void                 btt_set_tempo_tracking_callback  (BTT*  self, btt_tempo_callback_t callback, void* callback_self);
+btt_tempo_callback_t btt_get_tempo_tracking_callback  (BTT*  self, void** returned_callback_self);
+
+typedef void         (*btt_beat_callback_t)           (void* SELF, unsigned long long sample_time);
+void                 btt_set_beat_tracking_callback   (BTT*  self, btt_beat_callback_t callback, void* callback_self);
+btt_beat_callback_t  btt_get_beat_tracking_callback   (BTT*  self, void** returned_callback_self);
+```
+Too many pointers. Don't overthink it, just use the "getting started" code snippet or look at the demos if this dosen't make sense.
 
 ## Onset Detection
 ##### Overview
@@ -94,7 +173,7 @@ void      btt_set_onset_threshold                (BTT* self, double num_std_devs
 double    btt_get_onset_threshold                (BTT* self);
 /*default value: BTT_DEFAULT_ONSET_TREHSHOLD (1 standard deviation) */
 ```
-Your onset callback will be called whenever the onset signal rises above the onset threshold. The threshold is adaptive. A moving average of the onset signal is calculated, and the threshold remaines the given number of standard deviations above the mean. (the size of the moving average is not user-adjustable at this time.) This works well for percussion music and poorly for everything else. In the future I might try to do something better. Note that poor functioning of the onset detection does not affect the tempo estimates and beat tracking.
+Your onset callback will be called whenever the onset signal rises above the onset threshold. The threshold is adaptive. A moving average of the onset signal is calculated, and the threshold remaines the given number of standard deviations above the mean. The size of the moving average is an argument to btt_new, and is cconstant for the life of the object. This works well for percussion music and poorly for everything else. In the future I might try to do something better. Note that poor functioning of the onset detection does not affect the tempo estimates and beat tracking.
 
 ## Tempo Tracking
 ##### Overview
