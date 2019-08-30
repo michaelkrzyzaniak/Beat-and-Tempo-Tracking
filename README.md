@@ -57,6 +57,7 @@ double    btt_get_noise_cancellation_threshold   (BTT* self);
 ```
 For each window of audio, each bin whose value is less than the noise cancellation threshold will be set to 0;
 
+
 ```c
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);
 int       btt_get_use_amplitude_normalization    (BTT* self);
@@ -64,6 +65,7 @@ int       btt_get_use_amplitude_normalization    (BTT* self);
 ```
 Some papers suggest normalizing each window of audio before calculating flux. This dosen't make any sense and I wouldn't recomend doing it, but here are the functions to do it, so be my guest. If you turn amp normalization on, each window will be scaled so that the maxmium frequency bin is 1, after noise cancellation.
  
+
 ```c 
 void      btt_set_spectral_compression_gamma     (BTT* self, double gamma);
 double    btt_get_spectral_compression_gamma     (BTT* self);
@@ -72,6 +74,7 @@ double    btt_get_spectral_compression_gamma     (BTT* self);
 For each window, the specturm is squashed down (compressed) logarithimcally using the formula:
 COMPRESSED(spectrum) = log(1+gamma|spectrum|) / log(1+gamma)
 Zero indicates no compression, and higher values of gamma have diminishing returns. I'm not sure it makes much difference in the onset detection, and setting it to 0 saves two expensive calls to log() per audio sample.
+
 
 ```c 
 void      btt_set_oss_filter_cutoff              (BTT* self, double Hz);
