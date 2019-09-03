@@ -17,7 +17,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time);
 struct OpaqueMicrophoneStruct
 {
   AUDIO_GUTS            ;
-  BTT* btt        ;
+  BTT* btt              ;
   Click*  click         ;
 };
 
@@ -55,6 +55,8 @@ Microphone* mic_new()
 void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
+  if(btt_get_tracking_mode(self->btt) == BTT_ONSET_TRACKING)
+    click_click(self->click);
 }
 
 /*--------------------------------------------------------------------*/
@@ -62,8 +64,6 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
 void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
-  //fprintf(stderr, "click\r\n");
-  //putc(0x07, stderr);
   click_click(self->click);
 }
 

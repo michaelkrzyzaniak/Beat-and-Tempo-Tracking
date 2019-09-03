@@ -42,6 +42,9 @@ typedef enum
   BTT_ONSET_TRACKING,
   BTT_ONSET_AND_TEMPO_TRACKING,
   BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
+  BTT_TEMPO_LOCKED_BEAT_TRACKING,
+  //BTT_COUNT_IN_TRACKING,
+  BTT_NUM_TRACKING_MODES,
 }btt_tracking_mode_t;
 
 /*--------------------------------------------------------------------*/
@@ -62,7 +65,8 @@ typedef enum
 #define BTT_DEFAULT_TRACKING_MODE                    BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING
 #define BTT_DEFAULT_OSS_FILTER_CUTOFF                10    // Hz
 #define BTT_DEFAULT_USE_AMP_NORMALIZATION            0     // false
-#define BTT_DEFAULT_ONSET_TREHSHOLD                  1     // std devs above mean OSS signal
+#define BTT_DEFAULT_ONSET_TREHSHOLD                  0.1   // std devs above mean OSS signal
+#define BTT_DEFAULT_ONSET_TREHSHOLD_MIN              1.0   // raw flux value
 #define BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD     -74   // dB per freq bin
 #define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   100   // supress harmonics by favoring tempos closer to 100
 #define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH  75    // oss samples starndard deviation
@@ -95,6 +99,16 @@ BTT*      btt_destroy                            (BTT* self);
 void      btt_process                            (BTT* self, dft_sample_t* input, int num_samples);
 double    btt_get_sample_rate                    (BTT* self);
 
+//1/(1-0.999)
+void      btt_init(BTT* self);
+void      btt_clear(BTT* self);
+void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/);
+int       btt_get_beat_period_audio_samples(BTT* self);
+double    btt_get_tempo_bpm(BTT* self);
+double    btt_get_tempo_certainty(BTT* self);
+//int       set_count_in_n(BTT* self, int n);
+//void      get_count_in_n(BTT* self);
+
 /* onset detection adjustments */
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);
 int       btt_get_use_amplitude_normalization    (BTT* self);
@@ -104,7 +118,9 @@ void      btt_set_oss_filter_cutoff              (BTT* self, double Hz);
 double    btt_get_oss_filter_cutoff              (BTT* self);
 void      btt_set_onset_threshold                (BTT* self, double num_std_devs);
 double    btt_get_onset_threshold                (BTT* self);
-void      btt_set_noise_cancellation_threshold   (BTT* self, double dB /*probably negative*/);
+void      btt_set_onset_threshold_min            (BTT* self, double value);
+double    btt_get_onset_threshold_min            (BTT* self);
+void      btt_set_noise_cancellation_threshold   (BTT* self, double dB /*negative*/);
 double    btt_get_noise_cancellation_threshold   (BTT* self);
 
 /* tempo tracking adjustments */
@@ -143,8 +159,6 @@ void                 btt_set_tracking_mode            (BTT* self, btt_tracking_m
 btt_tracking_mode_t  btt_get_tracking_mode            (BTT* self);
 void                 btt_set_onset_tracking_callback  (BTT* self, btt_onset_callback_t callback, void* callback_self);
 btt_onset_callback_t btt_get_onset_tracking_callback  (BTT* self, void** returned_callback_self);
-void                 btt_set_tempo_tracking_callback  (BTT* self, btt_tempo_callback_t callback, void* callback_self);
-btt_tempo_callback_t btt_get_tempo_tracking_callback  (BTT* self, void** returned_callback_self);
 void                 btt_set_beat_tracking_callback   (BTT* self, btt_beat_callback_t callback, void* callback_self);
 btt_beat_callback_t  btt_get_beat_tracking_callback   (BTT* self, void** returned_callback_self);
 

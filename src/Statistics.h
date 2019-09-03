@@ -86,17 +86,20 @@ void               online_regression_update         (OnlineRegression* self, dou
   transitions to being above or below the threshold.
 ----------------------------------------------------------------------*/
 typedef struct     opaque_adaptive_threshold_struct AdaptiveThreshold;
-AdaptiveThreshold* adaptive_threshold_new           (unsigned N);
-void               adaptive_threshold_init          (AdaptiveThreshold* self);
-void               adaptive_threshold_clear         (AdaptiveThreshold* self);
-AdaptiveThreshold* adaptive_threshold_destroy       (AdaptiveThreshold* self);
-double             adaptive_threshold_smoothing     (AdaptiveThreshold* self);
-void               adaptive_threshold_set_smoothing (AdaptiveThreshold* self, double     coefficient);
-double             adaptive_threshold_threshold     (AdaptiveThreshold* self);
-void               adaptive_threshold_set_threshold (AdaptiveThreshold* self, double     std_devs);
-double             adaptive_threshold_onset_signal  (AdaptiveThreshold* self);
-double             adaptive_threshold_mean          (AdaptiveThreshold* self);
-double             adaptive_threshold_update        (AdaptiveThreshold* self, double     x);
+AdaptiveThreshold* adaptive_threshold_new              (unsigned N);
+void               adaptive_threshold_init             (AdaptiveThreshold* self);
+void               adaptive_threshold_clear            (AdaptiveThreshold* self);
+AdaptiveThreshold* adaptive_threshold_destroy          (AdaptiveThreshold* self);
+double             adaptive_threshold_smoothing        (AdaptiveThreshold* self);
+void               adaptive_threshold_set_smoothing    (AdaptiveThreshold* self, double     coefficient);
+double             adaptive_threshold_threshold_value  (AdaptiveThreshold* self); //mean + num std devs * std dev
+double             adaptive_threshold_threshold        (AdaptiveThreshold* self); //num std devs
+void               adaptive_threshold_set_threshold    (AdaptiveThreshold* self, double     std_devs);
+double             adaptive_threshold_threshold_min    (AdaptiveThreshold* self);
+void               adaptive_threshold_set_threshold_min(AdaptiveThreshold* self, double min); //raw value
+double             adaptive_threshold_onset_signal     (AdaptiveThreshold* self);
+double             adaptive_threshold_mean             (AdaptiveThreshold* self);
+double             adaptive_threshold_update           (AdaptiveThreshold* self, double     x);
 
 double             statistics_random_flat(); //(0, 1]
 double             statistics_random_normal(double     mean, double     std_dev);

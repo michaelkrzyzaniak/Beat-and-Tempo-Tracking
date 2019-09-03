@@ -22,6 +22,22 @@ typedef struct parameter_struct
 param_t params[] =
 {
   {
+    .set = (funct)btt_set_tracking_mode,
+    .get = (funct)btt_get_tracking_mode,
+    .type = 'i',
+    .init = BTT_DEFAULT_TRACKING_MODE,
+    .increment = 1,
+    .name = "btt_set_tracking_mode",
+  },
+  {
+    .set = (funct)btt_set_noise_cancellation_threshold,
+    .get = (funct)btt_get_noise_cancellation_threshold,
+    .type = 'd',
+    .init = BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD,
+    .increment = 1,
+    .name = "btt_set_noise_cancellation_threshold",
+  },
+  {
     .set = (funct)btt_set_use_amplitude_normalization,
     .get = (funct)btt_get_use_amplitude_normalization,
     .type = 'i',
@@ -54,12 +70,12 @@ param_t params[] =
     .name = "btt_set_onset_threshold",
   },
   {
-    .set = (funct)btt_set_noise_cancellation_threshold,
-    .get = (funct)btt_get_noise_cancellation_threshold,
+    .set = (funct)btt_set_onset_threshold_min,
+    .get = (funct)btt_get_onset_threshold_min,
     .type = 'd',
-    .init = BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD,
-    .increment = 1,
-    .name = "btt_set_noise_cancellation_threshold",
+    .init = BTT_DEFAULT_ONSET_TREHSHOLD_MIN,
+    .increment = 0.01,
+    .name = "btt_set_onset_threshold_min",
   },
   {
     .set = (funct)btt_set_autocorrelation_exponent,
@@ -254,7 +270,7 @@ int main(void)
           ((double_setter) p.set)(btt, val + increment);
           val = ((double_getter) p.get)(btt);
         }
-      fprintf(stderr, "%s(btt, %lf);\r\n", p.name, val);
+      fprintf(stderr, " %s(btt, %lf);                       \r", p.name, val);
     }
   
  out:

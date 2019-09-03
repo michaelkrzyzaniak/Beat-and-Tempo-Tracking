@@ -360,7 +360,7 @@ struct opaque_adaptive_threshold_struct
 {
   double         smoothing; //coefficient 0 ~ 1
   double         threshold; //standard deviations from filtered signal
-  
+  double         min;
   // step function (-1, 0, 1) that will hold its value while input is 
   // above threshold. update() only returns +1 or -1 at the moment
   // onset_signal transitions to +1 or -1;
@@ -391,6 +391,7 @@ void adaptive_threshold_init(AdaptiveThreshold* self)
 {
   self->smoothing  = 0.5; //coefficient 0 ~ 1
   self->threshold  = 3.5; //standard deviations from filtered signal
+  self->min        = 0;
   adaptive_threshold_clear(self);
 }
 
@@ -433,9 +434,31 @@ double     adaptive_threshold_threshold(AdaptiveThreshold* self)
 }
 
 /*--------------------------------------------------------------------*/
+double     adaptive_threshold_threshold_value(AdaptiveThreshold* self)
+{
+  double result = moving_average_std_dev(self->avg) * self->threshold;
+  if(result < self->min)
+    result = self->min;
+  return result + moving_average_mean(self->avg);
+}
+
+/*--------------------------------------------------------------------*/
 void adaptive_threshold_set_threshold(AdaptiveThreshold* self, double     std_devs)
 {
+  //if(std_devs < 0) std_devs = 0;
   self->threshold = std_devs;
+}
+
+/*--------------------------------------------------------------------*/
+double             adaptive_threshold_threshold_min    (AdaptiveThreshold* self)
+{
+  return self->min;
+}
+/*--------------------------------------------------------------------*/
+void               adaptive_threshold_set_threshold_min(AdaptiveThreshold* self, double min)
+{
+  //if(min < 0) min = 0;
+  self->min = min;
 }
 
 /*--------------------------------------------------------------------*/
@@ -459,7 +482,10 @@ double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
   self->filtered_x = (x * (1-self->smoothing)) + (self->filtered_x * self->smoothing);
   moving_average_update(self->avg, self->filtered_x);
 
-  if((fabs(x) - moving_average_mean(self->avg)) > (moving_average_std_dev(self->avg) * self->threshold))
+  double thresh = moving_average_std_dev(self->avg) * self->threshold;
+  if(thresh < self->min) thresh = self->min;
+
+  if((fabs(x) - moving_average_mean(self->avg)) > thresh)
     next = (x > moving_average_mean(self->avg)) ? 1 : -1;
   
   //ignore the first few samples so we get a stable std dev
