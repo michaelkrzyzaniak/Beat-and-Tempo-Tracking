@@ -22,7 +22,7 @@ void btt_beat_tracking               (BTT* self);
 //#define DEBUG_ONSETS
 //#define DEBUG_TEMPO
 //#define DEBUG_BEATS
-#define DEBUG_BEATS_2
+//#define DEBUG_BEATS_2
 
 /*--------------------------------------------------------------------*/
 struct Opaque_BTT_Struct
@@ -73,9 +73,14 @@ struct Opaque_BTT_Struct
   unsigned long long ignore_beats_until;
   double             ignore_spurious_beats_duration;
   
+  int                count_in_n;
+  OnlineAverage*     count_in_average;
+  int                count_in_count;
+  unsigned long long last_count_in_time;
+  
   btt_tracking_mode_t   tracking_mode;
+  btt_tracking_mode_t   tracking_mode_before_count_in;
   btt_onset_callback_t  onset_callback;
-  btt_tempo_callback_t  tempo_callback;
   btt_beat_callback_t   beat_callback;
   void* onset_callback_self;
   void* tempo_callback_self;
@@ -144,6 +149,9 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return btt_destroy(self);
 
+      self->count_in_average = online_average_new();
+      if(self->count_in_average == NULL) return btt_destroy(self);
+
       btt_init(self);
     
       //testing
@@ -188,6 +196,7 @@ BTT* btt_destroy(BTT* self)
       filter_destroy(self->oss_filter);
       adaptive_threshold_destroy(self->onset_threshold);
       online_average_destroy(self->tempo_score_variance);
+      online_average_destroy(self->count_in_average);
     
       free(self);
     }
@@ -220,6 +229,7 @@ void      btt_init(BTT* self)
   btt_set_predicted_beat_trigger_index    (self, BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX);
   btt_set_predicted_beat_gaussian_width   (self, BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH);
   btt_set_ignore_spurious_beats_duration  (self, BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION);
+  btt_set_count_in_n                      (self, BTT_DEFAULT_COUNT_IN_N);
   btt_set_onset_tracking_callback         (self, NULL, NULL);
   btt_set_beat_tracking_callback          (self, NULL, NULL);
   
@@ -233,10 +243,10 @@ void      btt_clear(BTT* self)
   self->num_oss_frames_processed    = 0;
   self->oss_index                   = 0;
   self->cbss_index                  = 0;
-  
+  self->count_in_count              = 0;
+  online_average_init (self->count_in_average);
   memset(self->oss, 0, self->oss_length * sizeof(*self->oss));
   btt_init_tempo(self, 0);
-  
 }
 
 /*--------------------------------------------------------------------*/
@@ -258,11 +268,13 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
       if((lag >= 0) && (lag < self->oss_length))
         {
          //normalize height later
-          self->gaussian_tempo_histogram[lag] = 1/(1-self->gaussian_tempo_histogram_decay);
+          self->gaussian_tempo_histogram[lag] = 1;
           self->beat_period_oss_samples = lag;
         
           int i;
-          for(i=self->cbss_length-1; i>=0; i-=lag)
+          //for(i=self->cbss_length-1; i>=0; i-=lag)
+          int start = filter_get_order(self->oss_filter) / 2;
+          for(i=2; i<self->cbss_length; i+=lag)
             self->cbss[(self->cbss_length + self->cbss_index - i) % self->cbss_length] = 15;
         }
       }
@@ -331,12 +343,26 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
   //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~1kb redundant space
   if(flux > 0)
     if(adaptive_threshold_update(self->onset_threshold, flux) == 1)
-      if(self->onset_callback != NULL)
-        {
-          unsigned long long t = self->num_audio_samples_processed;
-          t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
-          self->onset_callback(self->onset_callback_self, t);
-        }
+      {
+        ++self->count_in_count;
+        if(self->tracking_mode == BTT_COUNT_IN_TRACKING)
+          {
+            if(self->count_in_count > 1)
+              online_average_update(self->count_in_average, self->num_oss_frames_processed - self->last_count_in_time);
+            if(self->count_in_count >= self->count_in_n)
+              {
+                btt_init_tempo(self, LAG_TO_BPM(online_average_mean(self->count_in_average)));
+                btt_set_tracking_mode(self, self->tracking_mode_before_count_in);
+              }
+            self->last_count_in_time = self->num_oss_frames_processed;
+          }
+        if(self->onset_callback != NULL)
+          {
+            unsigned long long t = self->num_audio_samples_processed;
+            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
+            self->onset_callback(self->onset_callback_self, t);
+          }
+      }
   
   
   /*testing*/
@@ -454,6 +480,8 @@ void btt_tempo_tracking              (BTT* self)
   int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "n", "i", self->max_lag - self->min_lag);
   net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
   //end testing
+  
+  //fprintf(stderr, "%f\r\n", btt_get_tempo_certainty(self));
 #endif
 
   //this is way more likely to be because there were no peaks in the autocorrelation
@@ -470,22 +498,19 @@ void btt_tempo_tracking              (BTT* self)
   log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width) * self->one_minus_gaussian_tempo_histogram_decay;
   
   /* we could choose even narrower bounds, for example based on the widths of the gaussians or the valid tempo range */
+  
+  
   for(i=self->min_lag; i<self->max_lag; i++)
     {
       gaussian = i-candidate_tempo_lags[index_of_max_score];
       gaussian *= gaussian;
       gaussian = exp(-gaussian / self->gaussian_tempo_histogram_width);
-    
-    /*
-      log_gaussian = log2(i * self->log_gaussian_tempo_weight_mean);
-      log_gaussian *= log_gaussian;
-      log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width);
-    */
+
       self->gaussian_tempo_histogram[i] *= self->gaussian_tempo_histogram_decay;
       self->gaussian_tempo_histogram[i] += gaussian * log_gaussian;
       if(self->gaussian_tempo_histogram[i] > self->gaussian_tempo_histogram[index_of_max_gaussian])
         index_of_max_gaussian = i;
-
+  
 #if defined DEBUG_TEMPO
       //testing
       int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "t", "f", self->gaussian_tempo_histogram[i]);
@@ -498,7 +523,7 @@ void btt_tempo_tracking              (BTT* self)
   
 #if defined DEBUG_TEMPO
   //testing
-  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "tem", "f", btt_tempo_bpm(self));
+  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "tem", "f", btt_get_tempo_bpm(self));
   net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
   //end testing
 #endif
@@ -963,6 +988,19 @@ double    btt_get_ignore_spurious_beats_duration (BTT* self)
 }
 
 /*--------------------------------------------------------------------*/
+void       btt_set_count_in_n(BTT* self, int n)
+{
+  if(n < 1) n = 1;
+  self->count_in_n = n;
+}
+
+/*--------------------------------------------------------------------*/
+int      btt_get_count_in_n(BTT* self)
+{
+  return self->count_in_n;
+}
+
+/*--------------------------------------------------------------------*/
 void                      btt_set_tracking_mode            (BTT* self, btt_tracking_mode_t mode)
 {
   if(mode < 0)
@@ -971,14 +1009,20 @@ void                      btt_set_tracking_mode            (BTT* self, btt_track
     mode = BTT_NUM_TRACKING_MODES-1;
   
   if(self->tracking_mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
-    {
-      btt_set_cbss_alpha(self, self->cbss_alpha_before_lock);
-    }
+    btt_set_cbss_alpha(self, self->cbss_alpha_before_lock);
   if(mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
     {
       self->cbss_alpha_before_lock = btt_get_cbss_alpha(self);
       btt_set_cbss_alpha(self, 1);
     }
+  if((mode == BTT_COUNT_IN_TRACKING) && (self->tracking_mode != BTT_COUNT_IN_TRACKING))
+    {
+      self->tracking_mode_before_count_in = self->tracking_mode;
+      self->count_in_count              = 0;
+      online_average_init (self->count_in_average);
+    }
+  
+  //BTT_COUNT_IN_TRACKING
   
   self->tracking_mode = mode;
 }

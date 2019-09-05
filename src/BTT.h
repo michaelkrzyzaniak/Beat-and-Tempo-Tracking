@@ -40,10 +40,10 @@ extern "C"{
 typedef enum
 {
   BTT_ONSET_TRACKING,
+  BTT_COUNT_IN_TRACKING,
   BTT_ONSET_AND_TEMPO_TRACKING,
   BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
   BTT_TEMPO_LOCKED_BEAT_TRACKING,
-  //BTT_COUNT_IN_TRACKING,
   BTT_NUM_TRACKING_MODES,
 }btt_tracking_mode_t;
 
@@ -78,6 +78,7 @@ typedef enum
 #define BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX     20    //
 #define BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH    10    // oss samples
 #define BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION   40    // percent of beat at current tempo
+#define BTT_DEFAULT_COUNT_IN_N                        2    // percent of beat at current tempo
 
 #define BTT_DEFAULT_XCORR_NUM_PULSES                 8     //
 #define BTT_DEFAULT_XCORR_PULSE_LOCATIONS            {0, 1, 1.5, 2, 3, 4, 4.5, 6}
@@ -98,16 +99,15 @@ BTT*      btt_new_default                        ();
 BTT*      btt_destroy                            (BTT* self);
 void      btt_process                            (BTT* self, dft_sample_t* input, int num_samples);
 double    btt_get_sample_rate                    (BTT* self);
+void      btt_init                               (BTT* self);
+void      btt_clear                              (BTT* self);
+void      btt_init_tempo                         (BTT* self, double bpm /*0 to clear tempo*/);
 
-//1/(1-0.999)
-void      btt_init(BTT* self);
-void      btt_clear(BTT* self);
-void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/);
-int       btt_get_beat_period_audio_samples(BTT* self);
-double    btt_get_tempo_bpm(BTT* self);
-double    btt_get_tempo_certainty(BTT* self);
-//int       set_count_in_n(BTT* self, int n);
-//void      get_count_in_n(BTT* self);
+int       btt_get_beat_period_audio_samples      (BTT* self);
+double    btt_get_tempo_bpm                      (BTT* self);
+double    btt_get_tempo_certainty                (BTT* self);
+void      btt_set_count_in_n                     (BTT* self, int n);
+int       btt_get_count_in_n                     (BTT* self);
 
 /* onset detection adjustments */
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);

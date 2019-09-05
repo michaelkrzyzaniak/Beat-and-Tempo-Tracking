@@ -189,6 +189,14 @@ param_t params[] =
     .increment = 5,
     .name = "btt_set_ignore_spurious_beats_duration",
   },
+  {
+    .set = (funct)btt_set_count_in_n,
+    .get = (funct)btt_get_count_in_n,
+    .type = 'i',
+    .init = BTT_DEFAULT_COUNT_IN_N,
+    .increment = 1,
+    .name = "btt_set_count_in_n",
+  },
 };
 
 int num_params = 19; //sizeof(params) / sizeof(params[0]);
@@ -209,6 +217,7 @@ int main(void)
   if(mic == NULL) {perror("Unable to create microphone object"); exit(-1);}
   
   BTT* btt = mic_get_btt(mic);
+  btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
   
   auPlay((Audio*)mic);
   
@@ -248,6 +257,11 @@ int main(void)
               ((int_setter) p.set)(btt, p.init);
             else if(p.type == 'd')
               ((double_setter) p.set)(btt, p.init);
+            break;
+
+          case 'c': /* cascade */
+          case 'C':
+            btt_set_tracking_mode(btt, BTT_COUNT_IN_TRACKING);
             break;
 
           case 'q': /* cascade */
