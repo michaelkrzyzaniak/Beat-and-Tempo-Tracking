@@ -37,8 +37,8 @@ extern "C"{
 /*--------------------------------------------------------------------*/
 typedef enum
 {
-  BTT_ONSET_TRACKING,
   BTT_COUNT_IN_TRACKING,
+  BTT_ONSET_TRACKING,
   BTT_ONSET_AND_TEMPO_TRACKING,
   BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
   BTT_TEMPO_LOCKED_BEAT_TRACKING,

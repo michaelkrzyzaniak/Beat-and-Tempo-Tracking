@@ -244,7 +244,6 @@ void      btt_clear(BTT* self)
   self->num_audio_samples_processed = 0;
   self->num_oss_frames_processed    = 0;
   self->oss_index                   = 0;
-  self->cbss_index                  = 0;
   self->count_in_count              = 0;
   online_average_init (self->count_in_average);
   memset(self->oss, 0, self->oss_length * sizeof(*self->oss));
@@ -258,6 +257,7 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
   memset(self->cbss, 0, self->cbss_length * sizeof(*self->cbss));
   
   self->beat_period_oss_samples = 0;
+  self->cbss_index              = 0;
   
   if(bpm > 0)
     {
@@ -274,10 +274,10 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
           self->beat_period_oss_samples = lag;
         
           int i;
-          //for(i=self->cbss_length-1; i>=0; i-=lag)
           int start = filter_get_order(self->oss_filter) / 2;
-          for(i=2; i<self->cbss_length; i+=lag)
-            self->cbss[(self->cbss_length + self->cbss_index - i) % self->cbss_length] = 15;
+          for(i=self->cbss_length-1; i>=0; i-=lag)
+          //for(i=2; i<self->cbss_length; i+=lag)
+            self->cbss[(self->cbss_length + i) % self->cbss_length] = 15;
         }
       }
 }
@@ -289,7 +289,10 @@ int       btt_get_beat_period_audio_samples(BTT* self)
 /*--------------------------------------------------------------------*/
 double    btt_get_tempo_bpm(BTT* self)
 {
-  return LAG_TO_BPM(self->beat_period_oss_samples);
+  if(self->beat_period_oss_samples <=0)
+    return 0;
+  else
+    return LAG_TO_BPM(self->beat_period_oss_samples);
 }
 
 /*--------------------------------------------------------------------*/
@@ -342,9 +345,16 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
   if(flux > 0)
     if(adaptive_threshold_update(self->onset_threshold, flux) == 1)
       {
-        ++self->count_in_count;
+        if(self->onset_callback != NULL)
+          {
+            unsigned long long t = self->num_audio_samples_processed;
+            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
+            self->onset_callback(self->onset_callback_self, t);
+          }
+      
         if(self->tracking_mode == BTT_COUNT_IN_TRACKING)
           {
+            ++self->count_in_count;
             if(self->count_in_count > 1)
               online_average_update(self->count_in_average, self->num_oss_frames_processed - self->last_count_in_time);
             if(self->count_in_count >= self->count_in_n)
@@ -353,12 +363,6 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
                 btt_set_tracking_mode(self, self->tracking_mode_before_count_in);
               }
             self->last_count_in_time = self->num_oss_frames_processed;
-          }
-        if(self->onset_callback != NULL)
-          {
-            unsigned long long t = self->num_audio_samples_processed;
-            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
-            self->onset_callback(self->onset_callback_self, t);
           }
       }
 }
@@ -605,7 +609,7 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, dft_sample_
 {
   BTT* self = SELF;
 
-  if(self->tracking_mode >= BTT_ONSET_TRACKING)
+  if(self->tracking_mode >= BTT_COUNT_IN_TRACKING)
     btt_onset_tracking (self, real, imag, N);
   
   ++self->num_oss_frames_processed;
@@ -929,9 +933,9 @@ void                      btt_set_tracking_mode            (BTT* self, btt_track
   if(mode >= BTT_NUM_TRACKING_MODES)
     mode = BTT_NUM_TRACKING_MODES-1;
   
-  if(self->tracking_mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if((self->tracking_mode == BTT_TEMPO_LOCKED_BEAT_TRACKING) && (mode != BTT_TEMPO_LOCKED_BEAT_TRACKING))
     btt_set_cbss_alpha(self, self->cbss_alpha_before_lock);
-  if(mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if((mode == BTT_TEMPO_LOCKED_BEAT_TRACKING) && (self->tracking_mode != BTT_TEMPO_LOCKED_BEAT_TRACKING))
     {
       self->cbss_alpha_before_lock = btt_get_cbss_alpha(self);
       btt_set_cbss_alpha(self, 1);
@@ -942,8 +946,6 @@ void                      btt_set_tracking_mode            (BTT* self, btt_track
       self->count_in_count              = 0;
       online_average_init (self->count_in_average);
     }
-  
-  //BTT_COUNT_IN_TRACKING
   
   self->tracking_mode = mode;
 }
