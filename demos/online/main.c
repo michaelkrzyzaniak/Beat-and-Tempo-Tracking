@@ -199,7 +199,7 @@ param_t params[] =
   },
 };
 
-int num_params = 19; //sizeof(params) / sizeof(params[0]);
+int num_params = 22; //sizeof(params) / sizeof(params[0]);
 
 /*--------------------------------------------------------------------*/
 int main(void)
@@ -230,14 +230,15 @@ int main(void)
         {
           case '.': /* cascade */
           case '>':
-            ++param_index; param_index %= num_params;
+            ++param_index;
+            if(param_index >= num_params) param_index = num_params - 1;
             p = params[param_index];
             break;
           
           case ',': /* cascade */
           case '<':
             --param_index;
-            if(param_index < 0) param_index = num_params - 1;
+            if(param_index < 0) param_index = 0;
             p = params[param_index];
             break;
 

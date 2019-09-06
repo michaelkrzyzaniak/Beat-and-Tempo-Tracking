@@ -1,3 +1,30 @@
+/*----------------------------------------------------------------------
+ ____             _                     _
+| __ )  ___  __ _| |_    __ _ _ __   __| |
+|  _ \ / _ \/ _` | __|  / _` | '_ \ / _` |
+| |_) |  __/ (_| | |_  | (_| | | | | (_| |
+|____/ \___|\__,_|\__|  \__,_|_| |_|\__,_|
+ 
+ _____
+|_   _|__ _ __ ___  _ __   ___
+  | |/ _ \ '_ ` _ \| '_ \ / _ \
+  | |  __/ | | | | | |_) | (_) |
+  |_|\___|_| |_| |_| .__/ \___/
+                   |_|
+ _____               _    _
+|_   _| __ __ _  ___| | _(_)_ __   __ _
+  | || '__/ _` |/ __| |/ / | '_ \ / _` |
+  | || | | (_| | (__|   <| | | | | (_| |
+  |_||_|  \__,_|\___|_|\_\_|_| |_|\__, |
+                                  |___/
+------------------------------------------------------------------------
+
+  Made by Michael Krzyzaniak
+ 
+  Version:
+    1.0
+
+----------------------------------------------------------------------*/
 #include "BTT.h"
 #include "STFT.h"
 #include "Filter.h"
@@ -7,10 +34,6 @@
 #include <math.h>   //log
 #include <string.h> //memset
 
-#include <stdio.h> //fprintf (testing only)
-#include "Network.h" //Testing Only
-#include "OSC.h" //Testing Only
-
 #define BPM_TO_LAG(bpm) (60 * self->oss_sample_rate / ((float)(bpm)))
 #define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
 
@@ -18,11 +41,6 @@ void btt_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, dft_samp
 void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_t* imag, int N);
 void btt_tempo_tracking              (BTT* self);
 void btt_beat_tracking               (BTT* self);
-
-//#define DEBUG_ONSETS
-//#define DEBUG_TEMPO
-//#define DEBUG_BEATS
-//#define DEBUG_BEATS_2
 
 /*--------------------------------------------------------------------*/
 struct Opaque_BTT_Struct
@@ -85,11 +103,6 @@ struct Opaque_BTT_Struct
   void* onset_callback_self;
   void* tempo_callback_self;
   void* beat_callback_self;
-  
-  //testing stuff berlow here
-  Network* net;
-  char* osc_buff;
-  int osc_buff_size;
 };
 
 /*--------------------------------------------------------------------*/
@@ -153,15 +166,6 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       if(self->count_in_average == NULL) return btt_destroy(self);
 
       btt_init(self);
-    
-      //testing
-      self->net = net_new();
-      if(self->net == NULL) return btt_destroy(self);
-      net_udp_connect(self->net, 9876);
-    
-      self->osc_buff_size = 8192; //why not?
-      self->osc_buff = calloc(self->osc_buff_size, sizeof(*self->osc_buff));
-      if(self->osc_buff == NULL) return btt_destroy(self);
     }
   return self;
 }
@@ -203,8 +207,6 @@ BTT* btt_destroy(BTT* self)
   return (BTT*) NULL;
 }
 
-
-//1/(1-0.999)
 /*--------------------------------------------------------------------*/
 void      btt_init(BTT* self)
 {
@@ -242,7 +244,6 @@ void      btt_clear(BTT* self)
   self->num_audio_samples_processed = 0;
   self->num_oss_frames_processed    = 0;
   self->oss_index                   = 0;
-  self->cbss_index                  = 0;
   self->count_in_count              = 0;
   online_average_init (self->count_in_average);
   memset(self->oss, 0, self->oss_length * sizeof(*self->oss));
@@ -256,6 +257,7 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
   memset(self->cbss, 0, self->cbss_length * sizeof(*self->cbss));
   
   self->beat_period_oss_samples = 0;
+  self->cbss_index              = 0;
   
   if(bpm > 0)
     {
@@ -272,10 +274,10 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
           self->beat_period_oss_samples = lag;
         
           int i;
-          //for(i=self->cbss_length-1; i>=0; i-=lag)
           int start = filter_get_order(self->oss_filter) / 2;
-          for(i=2; i<self->cbss_length; i+=lag)
-            self->cbss[(self->cbss_length + self->cbss_index - i) % self->cbss_length] = 15;
+          for(i=self->cbss_length-1; i>=0; i-=lag)
+          //for(i=2; i<self->cbss_length; i+=lag)
+            self->cbss[(self->cbss_length + i) % self->cbss_length] = 15;
         }
       }
 }
@@ -287,7 +289,10 @@ int       btt_get_beat_period_audio_samples(BTT* self)
 /*--------------------------------------------------------------------*/
 double    btt_get_tempo_bpm(BTT* self)
 {
-  return LAG_TO_BPM(self->beat_period_oss_samples);
+  if(self->beat_period_oss_samples <=0)
+    return 0;
+  else
+    return LAG_TO_BPM(self->beat_period_oss_samples);
 }
 
 /*--------------------------------------------------------------------*/
@@ -306,10 +311,6 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
   //get spectrum magnitude, ignore DCC component in future calculations
   dft_rect_to_polar(real, imag, n_over_2);
   real[0] = 0;
-
-  //Normalize -- I'm not sure this is the correct approach here if we expect periods of silence
-  //if(self->should_normalize_amplitude)
-    //dft_normalize_magnitude(real, n_over_2);
   
   //perform log compression
   if(self->spectral_compression_gamma > 0)
@@ -335,18 +336,25 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
       self->prev_spectrum_magnitude[i] = real[i];
     }
   
-  //7HZ low-pass filter flux to obtaion OSS, delays oss by filter_order / 2 oss samples
+  //10HZ low-pass filter flux to obtaion OSS, delays oss by filter_order / 2 oss samples
   filter_process_data(self->oss_filter, &flux, 1);
   self->oss[self->oss_index] = flux;
-  //++self->oss_index; self->oss_index %= self->oss_length;
+  ++self->oss_index; self->oss_index %= self->oss_length;
 
   //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~1kb redundant space
   if(flux > 0)
     if(adaptive_threshold_update(self->onset_threshold, flux) == 1)
       {
-        ++self->count_in_count;
+        if(self->onset_callback != NULL)
+          {
+            unsigned long long t = self->num_audio_samples_processed;
+            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
+            self->onset_callback(self->onset_callback_self, t);
+          }
+      
         if(self->tracking_mode == BTT_COUNT_IN_TRACKING)
           {
+            ++self->count_in_count;
             if(self->count_in_count > 1)
               online_average_update(self->count_in_average, self->num_oss_frames_processed - self->last_count_in_time);
             if(self->count_in_count >= self->count_in_n)
@@ -356,23 +364,7 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
               }
             self->last_count_in_time = self->num_oss_frames_processed;
           }
-        if(self->onset_callback != NULL)
-          {
-            unsigned long long t = self->num_audio_samples_processed;
-            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
-            self->onset_callback(self->onset_callback_self, t);
-          }
       }
-  
-  
-  /*testing*/
-#if defined DEBUG_ONSETS
-  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "oss", "fff", flux, adaptive_threshold_mean(self->onset_threshold), adaptive_threshold_threshold_value(self->onset_threshold));
-  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-#endif
-  /*end testing*/
-  //move this back up later for clarity
-  ++self->oss_index; self->oss_index %= self->oss_length;
 }
 
 /*--------------------------------------------------------------------*/
@@ -403,7 +395,7 @@ void btt_tempo_tracking              (BTT* self)
         self->autocorrelation_real[i] += self->autocorrelation_real[four_i];
     }
   
-  //pick peaks
+  //pick peaks from autocorrelation
   float old_derivative = 1, new_derivative;
   int candidate_tempo_lags[self->num_tempo_candidates];
   for(i=0; i<self->num_tempo_candidates; candidate_tempo_lags[i++]=self->min_lag);
@@ -434,7 +426,7 @@ void btt_tempo_tracking              (BTT* self)
   float pulse_locations[]     = BTT_DEFAULT_XCORR_PULSE_LOCATIONS;
   float pulse_values[]        = BTT_DEFAULT_XCORR_PULSE_VALUES;
   
-  //7% realtime spent in this loop
+  //7% realtime spent in this loop (dft-free cross correlation)
   for(i=0; i<self->num_tempo_candidates; i++)
     {
       int phi;
@@ -462,7 +454,7 @@ void btt_tempo_tracking              (BTT* self)
   if((sum_of_score_max == 0) || sum_of_score_variance == 0)
     return;
   
-  //score candidates
+  //score candidates based on xcorr peak value and varience
   float score, max_score =- 1;
   int   index_of_max_score = 0;
   for(i=0; i<self->num_tempo_candidates; i++)
@@ -475,31 +467,19 @@ void btt_tempo_tracking              (BTT* self)
         }
     }
 
-#if defined DEBUG_TEMPO
-  //testing
-  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "n", "i", self->max_lag - self->min_lag);
-  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-  //end testing
-  
-  //fprintf(stderr, "%f\r\n", btt_get_tempo_certainty(self));
-#endif
-
   //this is way more likely to be because there were no peaks in the autocorrelation
   //(i.e. during silence) than because it was the the true tempo, so reject it.
   //in the future we might need to explicitely count non-zero samples in the OSS
   if(index_of_max_score == self->min_lag)
     return;
   
-  //store gaussian histogram
+  //store decaying gaussian histogram
   int index_of_max_gaussian = 0;
   float gaussian, log_gaussian;;
   log_gaussian = log2(candidate_tempo_lags[index_of_max_score] * self->log_gaussian_tempo_weight_mean);
   log_gaussian *= log_gaussian;
   log_gaussian = exp(-log_gaussian / self->log_gaussian_tempo_weight_width) * self->one_minus_gaussian_tempo_histogram_decay;
-  
-  /* we could choose even narrower bounds, for example based on the widths of the gaussians or the valid tempo range */
-  
-  
+
   for(i=self->min_lag; i<self->max_lag; i++)
     {
       gaussian = i-candidate_tempo_lags[index_of_max_score];
@@ -510,24 +490,9 @@ void btt_tempo_tracking              (BTT* self)
       self->gaussian_tempo_histogram[i] += gaussian * log_gaussian;
       if(self->gaussian_tempo_histogram[i] > self->gaussian_tempo_histogram[index_of_max_gaussian])
         index_of_max_gaussian = i;
-  
-#if defined DEBUG_TEMPO
-      //testing
-      int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "t", "f", self->gaussian_tempo_histogram[i]);
-      net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-      //end testing
-#endif
     }
   
   self->beat_period_oss_samples = index_of_max_gaussian;
-  
-#if defined DEBUG_TEMPO
-  //testing
-  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "tem", "f", btt_get_tempo_bpm(self));
-  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-  //end testing
-#endif
-  //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
 }
 
 /*--------------------------------------------------------------------*/
@@ -566,27 +531,12 @@ void btt_beat_tracking               (BTT* self)
   //equation 6, blend score of previous beat with oss
   self->cbss[self->cbss_index] = (self->one_minus_cbss_alpha * self->oss[oss_index]) + (self->cbss_alpha * max_phi);
   
-#if defined DEBUG_BEATS_2
-  //testing
-  int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "cbs", "f",self->cbss[self->cbss_index]);
-  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-  //end testing
-#endif
-  
   ++self->cbss_index; self->cbss_index %= self->cbss_length;
-
-#if defined DEBUG_BEATS_2
-  //testing
-  num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "n", "i", self->beat_period_oss_samples);
-  net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-  //end testing
-#endif
   
-  //cross-correlate cbss with pulses
-  //fprintf(stderr, "tempo: %f\r\n", self->tempo_bpm);
-  int    num_pulses            = 4;//BTT_DEFAULT_XCORR_NUM_PULSES;
-  float  pulse_locations[]     = {0, 1, 2, 3, 4};//BTT_DEFAULT_XCORR_PULSE_LOCATIONS;
-  float  pulse_values[]        = {1, 1, 1, 1};//BTT_DEFAULT_XCORR_PULSE_VALUES;
+  //cross-correlate cbss with beat pulses
+  int    num_pulses            = 4;;
+  float  pulse_locations[]     = {0, 1, 2, 3, 4};
+  float  pulse_values[]        = {1, 1, 1, 1};
   float* signal                = self->cbss;
   int    signal_length         = self->cbss_length;
   int    signal_index          = self->cbss_index;
@@ -609,20 +559,11 @@ void btt_beat_tracking               (BTT* self)
           val_of_max_phase = x_corr;
           max_phase = phase;
         }
-#if defined DEBUG_BEATS
-      //testing
-      if((self->num_oss_frames_processed % 10) == 0)
-      {
-        int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "x", "f", x_corr);
-        net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-      }
-      //end testing
-#endif
     }
   
   //project beat into the future
   max_phase = max_phase - self->cbss_length + 1;
-  max_phase -= self->beat_prediction_adjustment + filter_get_order(self->oss_filter) / 2; //make getter /  setter for adjustment value
+  max_phase -= self->beat_prediction_adjustment + filter_get_order(self->oss_filter) / 2;
   max_phase %= self->beat_period_oss_samples;
   max_phase = self->beat_period_oss_samples + max_phase;
   
@@ -630,8 +571,6 @@ void btt_beat_tracking               (BTT* self)
   float gaussian;
   int   index, max_index=0;
   float max_value=-1;
-  
-  //the bounds of this loop could be more restrictive
   for(i=0; i<self->cbss_length; i++)
     {
       gaussian = (i % self->beat_period_oss_samples)-max_phase;
@@ -644,25 +583,12 @@ void btt_beat_tracking               (BTT* self)
           max_value = self->predicted_beat_signal[index];
           max_index = i;
         }
-#if defined DEBUG_BEATS_2
-      //testing
-      if((self->num_oss_frames_processed % 10) == 0)
-      {
-         if(i < 400)
-          {
-          int num_bytes = oscConstruct(self->osc_buff, self->osc_buff_size, "g", "f", self->predicted_beat_signal[index]);
-          net_udp_send(self->net, self->osc_buff, num_bytes, "127.0.0.1", 7400);
-        }
-      }
-    //end testing
-#endif
     }
   
   self->predicted_beat_signal[self->predicted_beat_index] = 0;
   ++self->predicted_beat_index; self->predicted_beat_index %= self->cbss_length;
   
-  //fprintf(stderr, "tempo_bpm: %f\r\n", btt_get_tempo_bpm(self));
-  
+  //pick peak and call callback
   if(max_index == self->predicted_beat_trigger_index)
     {
       if(self->num_oss_frames_processed >= self->ignore_beats_until)
@@ -673,7 +599,6 @@ void btt_beat_tracking               (BTT* self)
               unsigned long long t = self->num_audio_samples_processed;
               t += (self->predicted_beat_trigger_index) * stft_get_hop(self->spectral_flux_stft);
               self->beat_callback (self->beat_callback_self, t);
-              //fprintf(stderr, "Here \r\n");
             }
         }
     }
@@ -684,7 +609,7 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, dft_sample_
 {
   BTT* self = SELF;
 
-  if(self->tracking_mode >= BTT_ONSET_TRACKING)
+  if(self->tracking_mode >= BTT_COUNT_IN_TRACKING)
     btt_onset_tracking (self, real, imag, N);
   
   ++self->num_oss_frames_processed;
@@ -1008,9 +933,9 @@ void                      btt_set_tracking_mode            (BTT* self, btt_track
   if(mode >= BTT_NUM_TRACKING_MODES)
     mode = BTT_NUM_TRACKING_MODES-1;
   
-  if(self->tracking_mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if((self->tracking_mode == BTT_TEMPO_LOCKED_BEAT_TRACKING) && (mode != BTT_TEMPO_LOCKED_BEAT_TRACKING))
     btt_set_cbss_alpha(self, self->cbss_alpha_before_lock);
-  if(mode == BTT_TEMPO_LOCKED_BEAT_TRACKING)
+  if((mode == BTT_TEMPO_LOCKED_BEAT_TRACKING) && (self->tracking_mode != BTT_TEMPO_LOCKED_BEAT_TRACKING))
     {
       self->cbss_alpha_before_lock = btt_get_cbss_alpha(self);
       btt_set_cbss_alpha(self, 1);
@@ -1021,8 +946,6 @@ void                      btt_set_tracking_mode            (BTT* self, btt_track
       self->count_in_count              = 0;
       online_average_init (self->count_in_average);
     }
-  
-  //BTT_COUNT_IN_TRACKING
   
   self->tracking_mode = mode;
 }

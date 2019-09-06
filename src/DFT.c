@@ -169,7 +169,6 @@ void dft_real_forward_dft(dft_sample_t* real, dft_sample_t* imag, int N)
       real[i] = real[N-i];
       imag[i] = -imag[N-i];
     }
-
 }
 
 /*-----------------------------------------------------------------------*/
