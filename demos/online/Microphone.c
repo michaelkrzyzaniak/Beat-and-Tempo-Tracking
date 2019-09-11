@@ -58,7 +58,7 @@ void mic_onset_detected_callback(void* SELF, unsigned long long sample_time)
   if(btt_get_tracking_mode(self->btt) <= BTT_ONSET_TRACKING)
     {
       click_click(self->click);
-      fprintf(stderr, "onset\r\n");
+      //fprintf(stderr, "onset\r\n");
     }
 }
 
@@ -68,7 +68,7 @@ void mic_beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   Microphone* self = (Microphone*) SELF;
   click_click(self->click);
-  fprintf(stderr, "beat\r\n");
+  //fprintf(stderr, "beat\r\n");
 }
 
 /*--------------------------------------------------------------------*/

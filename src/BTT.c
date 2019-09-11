@@ -255,6 +255,7 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
 {
   memset(self->gaussian_tempo_histogram, 0, self->oss_length * sizeof(*self->gaussian_tempo_histogram));
   memset(self->cbss, 0, self->cbss_length * sizeof(*self->cbss));
+  memset(self->predicted_beat_signal, 0, self->cbss_length * sizeof(*self->predicted_beat_signal));
   
   self->beat_period_oss_samples = 0;
   self->cbss_index              = 0;

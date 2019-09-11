@@ -83,7 +83,6 @@ void stft_process(STFT* self, dft_sample_t* real_input, int len, stft_onprocess_
       self->running_input[self->input_index++] = real_input[i];
       self->input_index %= self->window_size;
     
-      //?
       if(self->should_resynthesize)
         {
           real_input[i] = self->running_output[self->output_index];
@@ -91,10 +90,7 @@ void stft_process(STFT* self, dft_sample_t* real_input, int len, stft_onprocess_
           self->output_index %= self->fft_N;
         }
     
-      ++self->sample_counter;
-    
-      //new dft if necessary
-      if(self->sample_counter == self->hop_size)
+      if(++self->sample_counter == self->hop_size)
         {
           self->sample_counter = 0;
         
@@ -120,7 +116,6 @@ void stft_process(STFT* self, dft_sample_t* real_input, int len, stft_onprocess_
                 self->running_output[(self->output_index+j) % self->fft_N] += self->real[j];
             }
         }
-      //?
     }
 }
 
