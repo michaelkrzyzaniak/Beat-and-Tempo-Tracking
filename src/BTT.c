@@ -25,7 +25,7 @@
     1.0
 
 ----------------------------------------------------------------------*/
-#include "BTT.h"
+#include "../BTT.h"
 #include "STFT.h"
 #include "Filter.h"
 #include "Statistics.h"
