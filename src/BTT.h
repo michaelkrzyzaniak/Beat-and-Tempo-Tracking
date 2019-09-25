@@ -86,7 +86,6 @@ typedef enum
 typedef struct Opaque_BTT_Struct BTT;
 
 typedef void (*btt_onset_callback_t)             (void* SELF, unsigned long long sample_time);
-typedef void (*btt_tempo_callback_t)             (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples);
 typedef void (*btt_beat_callback_t)              (void* SELF, unsigned long long sample_time);
 
 /*--------------------------------------------------------------------*/
