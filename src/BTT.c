@@ -34,6 +34,8 @@
 #include <math.h>   //log
 #include <string.h> //memset
 
+#include <stdio.h> //testing only
+
 #define BPM_TO_LAG(bpm) (60 * self->oss_sample_rate / ((float)(bpm)))
 #define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
 
