@@ -7,13 +7,6 @@ void onset_detected_callback(void* SELF, unsigned long long sample_time)
 }
 
 /*--------------------------------------------------------------------*/
-void tempo_detected_callback (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples)
-{
-  fprintf(stderr, "The tempo is %f BPM at %llu samples into the audio stream\r\n", bpm, sample_time);
-  fprintf(stderr, "This corresponds to a beat period of %i audio samples\r\n", beat_period_in_samples);
-}
-
-/*--------------------------------------------------------------------*/
 void beat_detected_callback (void* SELF, unsigned long long sample_time)
 {
   fprintf(stderr, "Yay, a beat was detected %llu samples into the audio stream!\r\n", sample_time);
@@ -38,7 +31,6 @@ int main(void)
   
   /* specify which functions should recieve notificaions */
   btt_set_onset_tracking_callback  (btt, onset_detected_callback, NULL);
-  btt_set_tempo_tracking_callback  (btt, tempo_detected_callback, NULL);
   btt_set_beat_tracking_callback   (btt, beat_detected_callback , NULL);
 
   /*
