@@ -21,6 +21,7 @@ const double AU_TWO_PI_OVER_SAMPLE_RATE = SIN_TWO_PI / AU_SAMPLE_RATE;
 #if defined __APPLE__
 void  auAudioOutputCallback(void*, AudioQueueRef, AudioQueueBufferRef);
 void  auAudioInputCallback (void*, AudioQueueRef, AudioQueueBufferRef, const AudioTimeStamp*, UInt32, const AudioStreamPacketDescription*);
+
 #elif defined __linux__
 void* auAudioCallback(void* SELF);
 #endif
@@ -84,7 +85,7 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
                 }
             }
         }
-        
+
 #elif defined __linux__
       int error = 0;
 
@@ -95,7 +96,7 @@ Audio* auAlloc(int sizeofstarself, auAudioCallback_t callback, BOOL isOutput, un
       const char* name = (isOutput) ? AU_SPEAKER_DEVICE_NAME : AU_MIC_DEVICE_NAME;
       unsigned direction = (isOutput) ? SND_PCM_STREAM_PLAYBACK : SND_PCM_STREAM_CAPTURE;
       
-      error = snd_pcm_open(&(self->device), AU_SPEAKER_DEVICE_NAME, SND_PCM_STREAM_PLAYBACK, 0);
+      error = snd_pcm_open(&(self->device), name, direction, 0);
       if(error < 0) fprintf(stderr, "Audio.c: Unable to open speaker device %s: %s\n", AU_SPEAKER_DEVICE_NAME, snd_strerror(error));
             
       if(error >= 0)
@@ -186,7 +187,7 @@ Audio* auDestroy(Audio* self)
           
       if(self->queue != NULL)
         AudioQueueDispose(self->queue, YES);
-      
+
 #elif defined __linux__
       if(self->device != NULL)
         {
@@ -232,7 +233,7 @@ BOOL auPlay(Audio* self)
         }
       OSStatus error = AudioQueueStart(self->queue, NULL);
       if(error) fprintf(stderr, "Audio.c: unable to start queue\n");
-
+    
 #elif defined __linux__
       int error = pthread_create(&(self->thread), NULL, auAudioCallback, self);
       if(error != 0) perror("Audio.c: error creating Audio thread");
