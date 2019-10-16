@@ -1,3 +1,5 @@
+//gcc *.c ../../src/*.c
+
 #include "../../BTT.h"
 #include "MKAiff.h"
 #include "Timestamp.h"
@@ -10,6 +12,20 @@ void beat_detected_callback (void* SELF, unsigned long long sample_time);
 /*--------------------------------------------------------------------*/
 int main(int argc, char* argv[])
 {
+/* generate a click track;
+
+  MKAiff* click = aiffWithDurationInSeconds(1, 44100, 16, 60);
+  aiffAppendSilenceInSeconds(click, 60);
+  float sample = 0.5;
+  int i;
+  for(i=0; i<120; i++)
+    {
+      aiffSetPlayheadToFrames(click, 22050 * i);
+      aiffAddFloatingPointSamplesAtPlayhead(click, &sample, 1, aiffFloatSampleType, aiffYes);
+    }
+  aiffSaveWithFilename(click, "click.aiff");
+  return 0;
+*/
   if(argc < 2)
     {fprintf(stderr, "Please specify an aiff or wav file you would like to process.\r\n"); exit(-1);}
   

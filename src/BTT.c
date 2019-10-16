@@ -277,7 +277,7 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
           self->beat_period_oss_samples = lag;
         
           int i;
-          int start = filter_get_order(self->oss_filter) / 2;
+          int start = filter_get_order(self->oss_filter) / 2.0;
           for(i=self->cbss_length-1; i>=0; i-=lag)
           //for(i=2; i<self->cbss_length; i+=lag)
             self->cbss[(self->cbss_length + i) % self->cbss_length] = 15;
@@ -351,7 +351,7 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
         if(self->onset_callback != NULL)
           {
             unsigned long long t = self->num_audio_samples_processed;
-            t -= (filter_get_order(self->oss_filter) / 2) * stft_get_hop(self->spectral_flux_stft);
+            t -= ((filter_get_order(self->oss_filter) / 2.0) - 0.5) * stft_get_hop(self->spectral_flux_stft);
             self->onset_callback(self->onset_callback_self, t);
           }
       
@@ -544,7 +544,7 @@ void btt_beat_tracking               (BTT* self)
   int    signal_length         = self->cbss_length;
   int    signal_index          = self->cbss_index;
   int    phase;
-  int    max_phase = 0;
+  float  max_phase = 0;
   float  val_of_max_phase = -1;
   
   for(phase=0; phase<self->beat_period_oss_samples; phase++)
@@ -565,10 +565,10 @@ void btt_beat_tracking               (BTT* self)
     }
   
   //project beat into the future
-  max_phase = max_phase - self->cbss_length + 1;
-  max_phase -= self->beat_prediction_adjustment + filter_get_order(self->oss_filter) / 2;
-  max_phase %= self->beat_period_oss_samples;
-  max_phase = self->beat_period_oss_samples + max_phase;
+  max_phase -= self->cbss_length - 1;
+  max_phase -= self->beat_prediction_adjustment + (filter_get_order(self->oss_filter) / 2.0);
+  max_phase =  fmod(max_phase, self->beat_period_oss_samples);
+  max_phase += self->beat_period_oss_samples;
   
   //add this into the probabilities of future beats
   float gaussian;
@@ -600,7 +600,7 @@ void btt_beat_tracking               (BTT* self)
           if(self->beat_callback != NULL)
             {
               unsigned long long t = self->num_audio_samples_processed;
-              t += (self->predicted_beat_trigger_index) * stft_get_hop(self->spectral_flux_stft);
+              t += (self->predicted_beat_trigger_index + 0.5) * stft_get_hop(self->spectral_flux_stft);
               self->beat_callback (self->beat_callback_self, t);
             }
         }
