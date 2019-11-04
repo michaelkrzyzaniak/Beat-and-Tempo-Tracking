@@ -875,6 +875,12 @@ int       btt_get_beat_prediction_adjustment     (BTT* self)
 }
 
 /*--------------------------------------------------------------------*/
+int       btt_get_beat_prediction_adjustment_audio_samples (BTT* self)
+{
+  return self->beat_prediction_adjustment * stft_get_hop(self->spectral_flux_stft);
+}
+
+/*--------------------------------------------------------------------*/
 void      btt_set_predicted_beat_trigger_index   (BTT* self, int index)
 {
   if(index < 0) index = 0;

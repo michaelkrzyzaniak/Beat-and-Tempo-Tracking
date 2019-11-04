@@ -86,7 +86,6 @@ typedef enum
 typedef struct Opaque_BTT_Struct BTT;
 
 typedef void (*btt_onset_callback_t)             (void* SELF, unsigned long long sample_time);
-typedef void (*btt_tempo_callback_t)             (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples);
 typedef void (*btt_beat_callback_t)              (void* SELF, unsigned long long sample_time);
 
 /*--------------------------------------------------------------------*/
@@ -146,6 +145,7 @@ void      btt_set_cbss_eta                       (BTT* self, double eta);
 double    btt_get_cbss_eta                       (BTT* self);
 void      btt_set_beat_prediction_adjustment     (BTT* self, int oss_samples_earlier);
 int       btt_get_beat_prediction_adjustment     (BTT* self);
+int       btt_get_beat_prediction_adjustment_audio_samples (BTT* self);
 void      btt_set_predicted_beat_trigger_index   (BTT* self, int index);
 int       btt_get_predicted_beat_trigger_index   (BTT* self);
 void      btt_set_predicted_beat_gaussian_width  (BTT* self, double width);
