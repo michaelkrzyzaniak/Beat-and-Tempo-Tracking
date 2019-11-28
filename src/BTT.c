@@ -277,7 +277,6 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
           self->beat_period_oss_samples = lag;
         
           int i;
-          int start = filter_get_order(self->oss_filter) / 2.0;
           for(i=self->cbss_length-1; i>=0; i-=lag)
           //for(i=2; i<self->cbss_length; i+=lag)
             self->cbss[(self->cbss_length + i) % self->cbss_length] = 15;

@@ -346,7 +346,6 @@ void   dft_real_generalized_autocorrelation  (dft_sample_t* real  , dft_sample_t
 {
   int i;
   int n_over_2 = N >> 1;
-  dft_sample_t re, im;
   
   dft_real_forward_dft(real, imag, N);
   dft_rect_to_polar(real, imag, n_over_2);
