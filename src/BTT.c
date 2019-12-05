@@ -358,7 +358,17 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
           {
             ++self->count_in_count;
             if(self->count_in_count > 1)
-              online_average_update(self->count_in_average, self->num_oss_frames_processed - self->last_count_in_time);
+              {
+                int delta = self->num_oss_frames_processed - self->last_count_in_time;
+                //too much time in between counts, so start over
+                if(delta > self->max_lag)
+                  {
+                    online_average_init (self->count_in_average);
+                    self->count_in_count = 1;
+                  }
+                else
+                  online_average_update(self->count_in_average, self->num_oss_frames_processed - self->last_count_in_time);
+              }
             if(self->count_in_count >= self->count_in_n)
               {
                 btt_init_tempo(self, LAG_TO_BPM(online_average_mean(self->count_in_average)));
