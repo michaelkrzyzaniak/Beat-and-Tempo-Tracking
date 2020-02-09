@@ -430,8 +430,8 @@ void btt_tempo_tracking              (BTT* self)
     }
 
   //cross correlate with pulses and get score components
-  int   score_max     [self->num_tempo_candidates];
-  int   score_variance[self->num_tempo_candidates];
+  float score_max     [self->num_tempo_candidates];
+  float score_variance[self->num_tempo_candidates];
   float sum_of_score_max      = 0;
   float sum_of_score_variance = 0;
   int   num_pulses            = BTT_DEFAULT_XCORR_NUM_PULSES;
