@@ -45,8 +45,8 @@ void btt_beat_tracking               (BTT* self);
 
 
 #include <stdio.h> //fprintf (testing only)
-#include "Network.h" //Testing Only
-#include "OSC.h" //Testing Only
+#include "../../Main/extras/Network.h" //Testing Only
+#include "../../Main/extras/OSC.h" //Testing Only
 //#define DEBUG_ONSETS
 //#define DEBUG_TEMPO
 //#define DEBUG_BEATS
@@ -365,7 +365,7 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
   //10HZ low-pass filter flux to obtaion OSS, delays oss by filter_order / 2 oss samples
   filter_process_data(self->oss_filter, &flux, 1);
   self->oss[self->oss_index] = flux;
- // ++self->oss_index; self->oss_index %= self->oss_length;
+  //++self->oss_index; self->oss_index %= self->oss_length;
 
   //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~1kb redundant space
   if(flux > 0)
@@ -418,6 +418,7 @@ void btt_tempo_tracking              (BTT* self)
   if(self->autocorrelation_real[0] == 0)
     return;
 
+
   //enhance autocorreltaion
   for(i=self->min_lag; i<self->max_lag; i++)
     {
@@ -453,8 +454,8 @@ void btt_tempo_tracking              (BTT* self)
     }
 
   //cross correlate with pulses and get score components
-  int   score_max     [self->num_tempo_candidates];
-  int   score_variance[self->num_tempo_candidates];
+  float score_max     [self->num_tempo_candidates];
+  float score_variance[self->num_tempo_candidates];
   float sum_of_score_max      = 0;
   float sum_of_score_variance = 0;
   int   num_pulses            = BTT_DEFAULT_XCORR_NUM_PULSES;
@@ -467,6 +468,7 @@ void btt_tempo_tracking              (BTT* self)
       int phi;
       score_max[i] = 0;
       online_average_init(self->tempo_score_variance);
+    
       for(phi=0; phi<candidate_tempo_lags[i]; phi++)
         {
           int pulse;
@@ -657,6 +659,7 @@ void btt_beat_tracking               (BTT* self)
           max_value = self->predicted_beat_signal[index];
           max_index = i;
         }
+        fprintf(stderr, "HERE\r\n");
 #if defined DEBUG_BEATS_2
         //testing
         if((self->num_oss_frames_processed % 10) == 0)
@@ -1070,3 +1073,8 @@ btt_beat_callback_t    btt_get_beat_tracking_callback   (BTT* self, void** retur
   *returned_callback_self = self->beat_callback_self;
 }
 
+/*--------------------------------------------------------------------*/
+int  btt_get_beat_prediction_adjustment_audio_samples(BTT* self)
+{
+  return 0;
+}

@@ -472,7 +472,7 @@ double             adaptive_threshold_mean          (AdaptiveThreshold* self)
 {
   return moving_average_mean(self->avg);
 }
-
+#include <stdio.h>
 /*--------------------------------------------------------------------*/
 double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
 {
@@ -492,7 +492,7 @@ double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
   if(moving_average_n(self->avg) > 10)
     if((next != 0) && (self->onset_signal != next))
       result = next;
-
+  
   self->onset_signal = next;
   
   return result;

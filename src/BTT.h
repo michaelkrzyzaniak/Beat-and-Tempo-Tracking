@@ -160,6 +160,9 @@ btt_onset_callback_t btt_get_onset_tracking_callback  (BTT* self, void** returne
 void                 btt_set_beat_tracking_callback   (BTT* self, btt_beat_callback_t callback, void* callback_self);
 btt_beat_callback_t  btt_get_beat_tracking_callback   (BTT* self, void** returned_callback_self);
 
+//fake, implemented in main branch
+int  btt_get_beat_prediction_adjustment_audio_samples(BTT* self);
+
 #if defined(__cplusplus)
 }
 #endif   //(__cplusplus)
