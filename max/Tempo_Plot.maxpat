@@ -8,7 +8,7 @@
 			"architecture" : "x64"
 		}
 ,
-		"rect" : [ 22.0, 45.0, 570.0, 309.0 ],
+		"rect" : [ 22.0, 45.0, 952.0, 700.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -28,6 +28,20 @@
 		"digest" : "",
 		"tags" : "",
 		"boxes" : [ 			{
+				"box" : 				{
+					"fontname" : "Arial",
+					"fontsize" : 12.0,
+					"frgb" : 0.0,
+					"id" : "obj-11",
+					"maxclass" : "comment",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 195.0, 465.0, 150.0, 20.0 ],
+					"text" : "normally  231"
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"fontname" : "Arial",
 					"fontsize" : 12.0,
@@ -114,8 +128,7 @@
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 360.0, 180.0, 243.0, 38.0 ],
 					"presentation" : 1,
-					"presentation_rect" : [ 30.0, 270.0, 243.0, 38.0 ],
-					"text" : "108."
+					"presentation_rect" : [ 30.0, 270.0, 243.0, 38.0 ]
 				}
 
 			}
@@ -295,7 +308,7 @@
 					"maxclass" : "plot~",
 					"numinlets" : 1,
 					"numoutlets" : 1,
-					"numpoints" : 231,
+					"numpoints" : 13,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 180.0, 225.0, 495.0, 195.0 ],
 					"presentation" : 1,
@@ -313,7 +326,7 @@
 							"domain_markers" : [  ],
 							"domain_labels" : [  ],
 							"range_start" : 0.0,
-							"range_end" : 1489.0,
+							"range_end" : 5000.0,
 							"range_style" : "linear",
 							"range_markers" : [  ],
 							"range_labels" : [  ],

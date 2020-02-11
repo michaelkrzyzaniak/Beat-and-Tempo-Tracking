@@ -48,9 +48,9 @@ void btt_beat_tracking               (BTT* self);
 #include "../../Main/extras/Network.h" //Testing Only
 #include "../../Main/extras/OSC.h" //Testing Only
 //#define DEBUG_ONSETS
-//#define DEBUG_TEMPO
+#define DEBUG_TEMPO
 //#define DEBUG_BEATS
-#define DEBUG_BEATS_2
+//#define DEBUG_BEATS_2
 
 
 /*--------------------------------------------------------------------*/
