@@ -98,6 +98,10 @@ struct Opaque_BTT_Struct
   int                count_in_count;
   unsigned long long last_count_in_time;
   
+  int                analysis_latency_onset_adjustment; /* in audio samples */
+  int                analysis_latency_beat_adjustment_coarse; /* in oss samples */
+  int                analysis_latency_beat_adjustment_fine; /* in audio samples */
+  
   btt_tracking_mode_t   tracking_mode;
   btt_tracking_mode_t   tracking_mode_before_count_in;
   btt_onset_callback_t  onset_callback;
@@ -116,11 +120,14 @@ BTT*   btt_new_default                      ()
                     BTT_SUGGESTED_OSS_LENGTH,
                     BTT_SUGGESTED_ONSET_THRESHOLD_N,
                     BTT_SUGGESTED_CBSS_LENGTH,
-                    BTT_SUGGESTED_SAMPLE_RATE);
+                    BTT_SUGGESTED_SAMPLE_RATE,
+                    BTT_DEFAULT_ANALYSIS_LATENCY_ONSET_ADJUSTMENT,
+                    BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT
+                    );
 }
 
 /*--------------------------------------------------------------------*/
-BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss_filter_order, int oss_length, int onset_threshold_len, int cbss_length, double sample_rate)
+BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss_filter_order, int oss_length, int onset_threshold_len, int cbss_length, double sample_rate, int analysis_latency_onset_adjustment, int analysis_latency_beat_adjustment)
 {
   BTT* self = calloc(1, sizeof(*self));
   if(self != NULL)
@@ -163,6 +170,9 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       if(self->predicted_beat_signal == NULL) return btt_destroy(self);
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return btt_destroy(self);
+
+      btt_set_analysis_latency_onset_adjustment(self, analysis_latency_onset_adjustment);
+      btt_set_analysis_latency_beat_adjustment (self, analysis_latency_beat_adjustment );
 
       self->count_in_average = online_average_new();
       if(self->count_in_average == NULL) return btt_destroy(self);
@@ -343,14 +353,14 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
   self->oss[self->oss_index] = flux;
   ++self->oss_index; self->oss_index %= self->oss_length;
 
-  //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~1kb redundant space
+  //call onset detected callback; technically the threshold filter is storing the oss signal again, using ~8kb redundant space
   if(flux > 0)
     if(adaptive_threshold_update(self->onset_threshold, flux) == 1)
       {
         if(self->onset_callback != NULL)
           {
             unsigned long long t = self->num_audio_samples_processed;
-            t -= ((filter_get_order(self->oss_filter) / 2.0) - 0.5) * stft_get_hop(self->spectral_flux_stft);
+            t -= self->analysis_latency_onset_adjustment;
             self->onset_callback(self->onset_callback_self, t);
           }
       
@@ -361,7 +371,7 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_
               {
                 int delta = self->num_oss_frames_processed - self->last_count_in_time;
                 //too much time in between counts, so start over
-                if(delta > self->max_lag)
+                if((delta > self->max_lag) || (delta < self->min_lag))
                   {
                     online_average_init (self->count_in_average);
                     self->count_in_count = 1;
@@ -575,7 +585,7 @@ void btt_beat_tracking               (BTT* self)
   
   //project beat into the future
   max_phase -= self->cbss_length - 1;
-  max_phase -= self->beat_prediction_adjustment + (filter_get_order(self->oss_filter) / 2.0);
+  max_phase -= self->beat_prediction_adjustment + self->analysis_latency_beat_adjustment_coarse - self->predicted_beat_trigger_index;
   max_phase =  fmod(max_phase, self->beat_period_oss_samples);
   max_phase += self->beat_period_oss_samples;
   
@@ -609,7 +619,8 @@ void btt_beat_tracking               (BTT* self)
           if(self->beat_callback != NULL)
             {
               unsigned long long t = self->num_audio_samples_processed;
-              t += (self->predicted_beat_trigger_index + 0.5) * stft_get_hop(self->spectral_flux_stft);
+              t += self->beat_prediction_adjustment * stft_get_hop(self->spectral_flux_stft);
+              t -= self->analysis_latency_beat_adjustment_fine;
               self->beat_callback (self->beat_callback_self, t);
             }
         }
@@ -928,6 +939,32 @@ void      btt_set_ignore_spurious_beats_duration (BTT* self, double percent_of_t
 double    btt_get_ignore_spurious_beats_duration (BTT* self)
 {
   return self->ignore_spurious_beats_duration * 100;
+}
+
+/*--------------------------------------------------------------------*/
+void      btt_set_analysis_latency_onset_adjustment    (BTT* self, int adjustment)
+{
+  self->analysis_latency_onset_adjustment = adjustment;
+}
+
+/*--------------------------------------------------------------------*/
+int       btt_get_analysis_latency_onset_adjustment    (BTT* self)
+{
+  return self->analysis_latency_onset_adjustment;
+}
+
+/*--------------------------------------------------------------------*/
+void      btt_set_analysis_latency_beat_adjustment(BTT* self, int adjustment)
+{
+  double hop = stft_get_hop(self->spectral_flux_stft);
+  self->analysis_latency_beat_adjustment_coarse = round(adjustment / hop);
+  self->analysis_latency_beat_adjustment_fine   = adjustment - hop*self->analysis_latency_beat_adjustment_coarse;
+}
+
+/*--------------------------------------------------------------------*/
+int       btt_get_analysis_latency_beat_adjustment(BTT* self)
+{
+  return self->analysis_latency_beat_adjustment_coarse*stft_get_hop(self->spectral_flux_stft) + self->analysis_latency_beat_adjustment_fine;
 }
 
 /*--------------------------------------------------------------------*/

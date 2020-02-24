@@ -48,7 +48,7 @@ extern "C"{
 #endif
 
 #define AU_NUM_AUDIO_BUFFERS  4
-#define AU_BUFFER_NUM_FRAMES  512
+#define AU_BUFFER_NUM_FRAMES  128
 #define AU_SAMPLE_RATE        44100.0
 //#define AU_SAMPLE_RATE        192000.0
 

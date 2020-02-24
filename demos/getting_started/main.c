@@ -24,7 +24,10 @@ int main(void)
                      BTT_SUGGESTED_OSS_LENGTH,
                      BTT_SUGGESTED_ONSET_THRESHOLD_N,
                      BTT_SUGGESTED_CBSS_LENGTH,
-                     BTT_SUGGESTED_SAMPLE_RATE);
+                     BTT_SUGGESTED_SAMPLE_RATE,
+                     BTT_DEFAULT_ANALYSIS_LATENCY_ONSET_ADJUSTMENT,
+                     BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT
+                     );
   */
   
   if(btt == NULL){perror("unable to create btt object"); exit(-2);}

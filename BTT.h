@@ -54,6 +54,9 @@ typedef enum
 #define BTT_SUGGESTED_SAMPLE_RATE                    44100 // audio sample rate
 #define BTT_SUGGESTED_CBSS_LENGTH                    1024  // should be at least a little bigger than the slowest tempo lag in oss samples
 
+#define BTT_DEFAULT_ANALYSIS_LATENCY_ONSET_ADJUSTMENT 857
+#define BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT  1206
+
 /*--------------------------------------------------------------------*/
 #define BTT_DEFAULT_MIN_TEMPO                        50    // BPM
 #define BTT_DEFAULT_MAX_TEMPO                        200   // BPM
@@ -89,9 +92,14 @@ typedef void (*btt_onset_callback_t)             (void* SELF, unsigned long long
 typedef void (*btt_beat_callback_t)              (void* SELF, unsigned long long sample_time);
 
 /*--------------------------------------------------------------------*/
+/* if you adjust these you are going to have to empirically determine the analysis_latency_adjustment using the utility in demos/analysis_latency/
+  the analysis latency is caused by complex interactions between filters, buffering, adaptive thresholds, and other things, and I couldn't
+  find a closed-form expression that caputures it. If you use btt_new_default you will be fine, if not, you have to manually calculate it.
+ */
 BTT*      btt_new                                (int spectral_flux_stft_len, int spectral_flux_stft_overlap,
                                                   int oss_filter_order      , int oss_length,
-                                                  int cbss_length           , int onset_threshold_len, double sample_rate);
+                                                  int cbss_length           , int onset_threshold_len, double sample_rate,
+                                                  int analysis_latency_onset_adjustment, int analysis_latency_beat_adjustment);
 BTT*      btt_new_default                        ();
 BTT*      btt_destroy                            (BTT* self);
 void      btt_process                            (BTT* self, dft_sample_t* input, int num_samples);
@@ -152,6 +160,10 @@ void      btt_set_predicted_beat_gaussian_width  (BTT* self, double width);
 double    btt_get_predicted_beat_gaussian_width  (BTT* self);
 void      btt_set_ignore_spurious_beats_duration (BTT* self, double percent_of_tempo);
 double    btt_get_ignore_spurious_beats_duration (BTT* self);
+void      btt_set_analysis_latency_onset_adjustment(BTT* self, int adjustment);
+int       btt_get_analysis_latency_onset_adjustment(BTT* self);
+void      btt_set_analysis_latency_beat_adjustment(BTT* self, int adjustment);
+int       btt_get_analysis_latency_beat_adjustment(BTT* self);
 
 void                 btt_set_tracking_mode            (BTT* self, btt_tracking_mode_t mode);
 btt_tracking_mode_t  btt_get_tracking_mode            (BTT* self);
