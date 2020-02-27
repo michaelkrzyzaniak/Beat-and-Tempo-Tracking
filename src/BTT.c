@@ -102,6 +102,9 @@ struct Opaque_BTT_Struct
   int                analysis_latency_beat_adjustment_coarse; /* in oss samples */
   int                analysis_latency_beat_adjustment_fine; /* in audio samples */
   
+  unsigned long long metronome_clock;
+  unsigned long long metronome_lag;
+  
   btt_tracking_mode_t   tracking_mode;
   btt_tracking_mode_t   tracking_mode_before_count_in;
   btt_onset_callback_t  onset_callback;
@@ -171,12 +174,14 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       self->tempo_score_variance = online_average_new();
       if(self->tempo_score_variance == NULL) return btt_destroy(self);
 
-      btt_set_analysis_latency_onset_adjustment(self, analysis_latency_onset_adjustment);
-      btt_set_analysis_latency_beat_adjustment (self, analysis_latency_beat_adjustment );
-
       self->count_in_average = online_average_new();
       if(self->count_in_average == NULL) return btt_destroy(self);
 
+      btt_set_metronome_bpm (self, BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN);
+
+      btt_set_analysis_latency_onset_adjustment(self, analysis_latency_onset_adjustment);
+      btt_set_analysis_latency_beat_adjustment (self, analysis_latency_beat_adjustment );
+    
       btt_init(self);
     }
   return self;
@@ -291,20 +296,39 @@ void      btt_init_tempo(BTT* self, double bpm /*0 to clear tempo*/)
           //for(i=2; i<self->cbss_length; i+=lag)
             self->cbss[(self->cbss_length + i) % self->cbss_length] = 15;
         }
-      }
+    
+      //btt_set_metronome_bpm(self, bpm);
+      self->metronome_clock = 0;
+    }
 }
 /*--------------------------------------------------------------------*/
 int       btt_get_beat_period_audio_samples(BTT* self)
 {
-  return self->beat_period_oss_samples * stft_get_hop(self->spectral_flux_stft);
+  if(self->tracking_mode == BTT_METRONOME_MODE)
+    return self->metronome_lag * stft_get_hop(self->spectral_flux_stft);
+  else
+    return self->beat_period_oss_samples * stft_get_hop(self->spectral_flux_stft);
 }
+
 /*--------------------------------------------------------------------*/
 double    btt_get_tempo_bpm(BTT* self)
 {
   if(self->beat_period_oss_samples <=0)
     return 0;
+  else if(self->tracking_mode == BTT_METRONOME_MODE)
+    return LAG_TO_BPM(self->metronome_lag);
   else
     return LAG_TO_BPM(self->beat_period_oss_samples);
+}
+
+/*--------------------------------------------------------------------*/
+void      btt_set_metronome_bpm                  (BTT* self, double bpm)
+{
+  float max_bpm = btt_get_max_tempo(self);
+  float min_bpm = btt_get_min_tempo(self);
+  if(bpm > max_bpm) bpm = max_bpm;
+  if(bpm < min_bpm) bpm = min_bpm;
+  self->metronome_lag = round(BPM_TO_LAG(bpm));
 }
 
 /*--------------------------------------------------------------------*/
@@ -636,6 +660,20 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, dft_sample_
     btt_onset_tracking (self, real, imag, N);
   
   ++self->num_oss_frames_processed;
+
+  if(self->tracking_mode == BTT_METRONOME_MODE)
+    {
+      ++self->metronome_clock;
+      if(self->metronome_clock >= self->metronome_lag)
+        {
+          unsigned long long t = self->num_audio_samples_processed;
+          t += 0.5 * stft_get_hop(self->spectral_flux_stft);
+          self->beat_callback (self->beat_callback_self, t);
+          self->metronome_clock = 0;
+        }
+      return;
+    }
+  
   
   if((self->tracking_mode == BTT_ONSET_AND_TEMPO_TRACKING) ||
      (self->tracking_mode == BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING))

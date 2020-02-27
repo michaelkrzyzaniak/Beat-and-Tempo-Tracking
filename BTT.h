@@ -42,6 +42,7 @@ typedef enum
   BTT_ONSET_AND_TEMPO_TRACKING,
   BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING,
   BTT_TEMPO_LOCKED_BEAT_TRACKING,
+  BTT_METRONOME_MODE,
   BTT_NUM_TRACKING_MODES,
 }btt_tracking_mode_t;
 
@@ -92,7 +93,7 @@ typedef void (*btt_onset_callback_t)             (void* SELF, unsigned long long
 typedef void (*btt_beat_callback_t)              (void* SELF, unsigned long long sample_time);
 
 /*--------------------------------------------------------------------*/
-/* if you adjust these you are going to have to empirically determine the analysis_latency_adjustment using the utility in demos/analysis_latency/
+/* if you use btt_new you are going to have to empirically determine the analysis_latency_adjustments using the utility in demos/analysis_latency/
   the analysis latency is caused by complex interactions between filters, buffering, adaptive thresholds, and other things, and I couldn't
   find a closed-form expression that caputures it. If you use btt_new_default you will be fine, if not, you have to manually calculate it.
  */
@@ -113,6 +114,9 @@ double    btt_get_tempo_bpm                      (BTT* self);
 double    btt_get_tempo_certainty                (BTT* self);
 void      btt_set_count_in_n                     (BTT* self, int n);
 int       btt_get_count_in_n                     (BTT* self);
+
+/* only valid in metronome mode */
+void      btt_set_metronome_bpm                  (BTT* self, double bpm);
 
 /* onset detection adjustments */
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);
