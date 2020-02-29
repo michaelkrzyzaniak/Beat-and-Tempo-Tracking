@@ -1021,7 +1021,7 @@ int      btt_get_count_in_n(BTT* self)
 /*--------------------------------------------------------------------*/
 void                      btt_set_tracking_mode            (BTT* self, btt_tracking_mode_t mode)
 {
-  if(mode < 0)
+  if((signed int) mode < 0)
     mode = 0;
   if(mode >= BTT_NUM_TRACKING_MODES)
     mode = BTT_NUM_TRACKING_MODES-1;
@@ -1048,6 +1048,28 @@ btt_tracking_mode_t    btt_get_tracking_mode            (BTT* self)
 {
   return self->tracking_mode;
 }
+
+/*--------------------------------------------------------------------*/
+const char*            btt_get_tracking_mode_string     (BTT* self)
+{
+  btt_tracking_mode_t mode = btt_get_tracking_mode(self);
+  
+  if(((signed int)mode < 0) || (mode >= BTT_NUM_TRACKING_MODES))
+    mode = BTT_NUM_TRACKING_MODES;
+  
+  const char* names[] =
+  {
+    "BTT_COUNT_IN_TRACKING",
+    "BTT_ONSET_TRACKING",
+    "BTT_ONSET_AND_TEMPO_TRACKING",
+    "BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING",
+    "BTT_TEMPO_LOCKED_BEAT_TRACKING",
+    "BTT_METRONOME_MODE",
+    "INVALID TRACKING MODE"
+  };
+  return names[mode];
+}
+
 
 /*--------------------------------------------------------------------*/
 void                      btt_set_onset_tracking_callback  (BTT* self, btt_onset_callback_t callback, void* callback_self)

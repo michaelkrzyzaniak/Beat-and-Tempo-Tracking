@@ -171,6 +171,7 @@ int       btt_get_analysis_latency_beat_adjustment(BTT* self);
 
 void                 btt_set_tracking_mode            (BTT* self, btt_tracking_mode_t mode);
 btt_tracking_mode_t  btt_get_tracking_mode            (BTT* self);
+const char*          btt_get_tracking_mode_string     (BTT* self);
 void                 btt_set_onset_tracking_callback  (BTT* self, btt_onset_callback_t callback, void* callback_self);
 btt_onset_callback_t btt_get_onset_tracking_callback  (BTT* self, void** returned_callback_self);
 void                 btt_set_beat_tracking_callback   (BTT* self, btt_beat_callback_t callback, void* callback_self);
