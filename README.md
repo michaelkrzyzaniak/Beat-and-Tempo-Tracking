@@ -13,7 +13,6 @@ int main(void)
 
   /* specify which functions should recieve notificaions */
   btt_set_onset_tracking_callback  (btt, onset_detected_callback, NULL);
-  btt_set_tempo_tracking_callback  (btt, tempo_detected_callback, NULL);
   btt_set_beat_tracking_callback   (btt, beat_detected_callback , NULL);
 
   int buffer_size = 64;
@@ -30,12 +29,6 @@ int main(void)
 void onset_detected_callback(void* SELF, unsigned long long sample_time)
 {
   //called when onset was detected
-}
-
-/*--------------------------------------------------------------------*/
-void tempo_detected_callback (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples)
-{
-  //called periodically with tempo update
 }
 
 /*--------------------------------------------------------------------*/
