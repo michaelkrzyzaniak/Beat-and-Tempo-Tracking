@@ -1,13 +1,12 @@
 //gcc *.c ../../src/*.c
 
 //**************************************
-//the suggested onset adjustment is 856
-//the suggested beat adjustment is 1441
+//the suggested onset adjustment is 857
+//the suggested beat adjustment is 1270
 //**************************************
-
 //**************************************
-//the onset error is -0.973402
-//the beat error is -96.437024
+//the onset error is -0.913972
+//the beat error is 50.123595
 //**************************************
 
 #include "../../BTT.h"
@@ -57,7 +56,6 @@ int main(void)
       get_analysis_latency_mean(tempo, 0/*BTT_DEFAULT_ANALYSIS_LATENCY_ADJUSTMENT*/, 0/*BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT*/, &onset_error, &beat_error);
       online_average_update(onset_adjustment, onset_error);
       online_average_update(beat_adjustment, beat_error);
-    
     }
 
   int suggested_onset_adjustment = round(online_average_mean(onset_adjustment));
