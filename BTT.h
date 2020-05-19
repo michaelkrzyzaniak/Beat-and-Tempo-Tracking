@@ -56,7 +56,7 @@ typedef enum
 #define BTT_SUGGESTED_CBSS_LENGTH                    1024  // should be at least a little bigger than the slowest tempo lag in oss samples
 
 #define BTT_DEFAULT_ANALYSIS_LATENCY_ONSET_ADJUSTMENT 857
-#define BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT  1206
+#define BTT_DEFAULT_ANALYSIS_LATENCY_BEAT_ADJUSTMENT  1270
 
 /*--------------------------------------------------------------------*/
 #define BTT_DEFAULT_MIN_TEMPO                        50    // BPM

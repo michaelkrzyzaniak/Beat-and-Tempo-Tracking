@@ -38,6 +38,7 @@
 
 #define BPM_TO_LAG(bpm) (60 * self->oss_sample_rate / ((float)(bpm)))
 #define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
+#define MODULO(x, N)    (((x) % (N) + (N)) % (N))
 
 void btt_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, dft_sample_t* imag, int N);
 void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_t* imag, int N);
@@ -580,8 +581,8 @@ void btt_beat_tracking               (BTT* self)
   ++self->cbss_index; self->cbss_index %= self->cbss_length;
   
   //cross-correlate cbss with beat pulses
-  int    num_pulses            = 4;;
-  float  pulse_locations[]     = {0, 1, 2, 3, 4};
+  int    num_pulses            = 4;
+  float  pulse_locations[]     = {0, 1, 2, 3};
   float  pulse_values[]        = {1, 1, 1, 1};
   float* signal                = self->cbss;
   int    signal_length         = self->cbss_length;
@@ -589,16 +590,16 @@ void btt_beat_tracking               (BTT* self)
   int    phase;
   float  max_phase = 0;
   float  val_of_max_phase = -1;
-  
+
   for(phase=0; phase<self->beat_period_oss_samples; phase++)
     {
       int pulse;
       float x_corr = 0;
       for(pulse=0; pulse<num_pulses; pulse++)
         {
-          int index = phase + pulse_locations[pulse] * self->beat_period_oss_samples;
+          int index = phase + pulse_locations[pulse] * self->beat_period_oss_samples + 1;
           if(index < signal_length)
-            x_corr += signal[(index + signal_index) % signal_length] * pulse_values[pulse];
+            x_corr += signal[MODULO(signal_index-index, signal_length)] * pulse_values[pulse];
         }
       if(x_corr > val_of_max_phase)
         {
@@ -607,11 +608,11 @@ void btt_beat_tracking               (BTT* self)
         }
     }
   
-  //project beat into the future
-  max_phase -= self->cbss_length - 1;
+  //float test_orig_max_phase = max_phase;
+  
+  max_phase = self->beat_period_oss_samples - max_phase;
   max_phase -= self->beat_prediction_adjustment + self->analysis_latency_beat_adjustment_coarse - self->predicted_beat_trigger_index;
   max_phase =  fmod(max_phase, self->beat_period_oss_samples);
-  max_phase += self->beat_period_oss_samples;
   
   //add this into the probabilities of future beats
   float gaussian;
@@ -649,6 +650,21 @@ void btt_beat_tracking               (BTT* self)
             }
         }
     }
+  
+    //fprintf(stderr, "%i\t%f\t%f\r\n", self->oss_index, self->oss[(self->oss_index + 1023) % 1024], //adaptive_threshold_threshold_value(self->onset_threshold));
+    
+/*
+    if((self->cbss[(self->cbss_index+100) % self->oss_length] > 4.76103) && (self->cbss[(self->cbss_index+100 ) % self->oss_length] < 4.76104))
+      {
+        fprintf(stderr, "--------------------------------\r\n");
+        fprintf(stderr, "bpm: %f\r\n", LAG_TO_BPM(self->beat_period_oss_samples));
+        fprintf(stderr, "beat_period:%i\tmax_phase:%f\torig_max_phase:%f\r\n", self->beat_period_oss_samples, max_phase, test_orig_max_phase);
+        for(i=0; i<self->oss_length; i++)
+        {
+          fprintf(stderr, "%f\t%f\t%f\r\n", self->cbss[(self->cbss_index+i) % self->oss_length], self->oss[(oss_index+i) % self->oss_length],       self->predicted_beat_signal[(self->predicted_beat_index + i) % self->cbss_length]);
+         }
+      }
+*/
 }
 
 /*--------------------------------------------------------------------*/
