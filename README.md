@@ -107,11 +107,7 @@ Set the tracking mode.  This is used to turn off parts of the algorithm that you
 ```c
 typedef void        (*btt_onset_callback_t)           (void* SELF, unsigned long long sample_time);
 void                 btt_set_onset_tracking_callback  (BTT*  self, btt_onset_callback_t callback, void* callback_self);
-btt_onset_callback_t btt_get_onset_tracking_callback  (BTT*  self, void** returned_callback_self);
-
-typedef void         (*btt_tempo_callback_t)          (void* SELF, unsigned long long sample_time, double bpm, int beat_period_in_samples);
-void                 btt_set_tempo_tracking_callback  (BTT*  self, btt_tempo_callback_t callback, void* callback_self);
-btt_tempo_callback_t btt_get_tempo_tracking_callback  (BTT*  self, void** returned_callback_self);
+btt_onset_callback_t btt_get_onset_tracking_callback  (BTT*  self, void** returned_callback_self); 
 
 typedef void         (*btt_beat_callback_t)           (void* SELF, unsigned long long sample_time);
 void                 btt_set_beat_tracking_callback   (BTT*  self, btt_beat_callback_t callback, void* callback_self);
@@ -123,6 +119,8 @@ Too many pointers. Don't overthink it, just use the "getting started" code snipp
 ##### Overview
 For onset detection, this library follows the method described here and similarly elsewhere:
 http://www.ijsps.com/uploadfile/2017/1220/20171220034151817.pdf
+A video showing what the onset parameter adustments do is here: 
+https://youtu.be/w4Vp2QxSG9k
 
 This library uses the spectral flux of the audio signal to detect onsets. It takes a windowed DFT of the audio, and in each window, it adds up all of the bins that have more energy than they did previously. This results in a signal, the 'onset signal (oss)' that should spike when there is a new note. This signal is low-pass filtered to remove noise. Then an onset is reported when the signal rises above a threshold that is a certain number of standard deviations over the running mean of the signal.
 
@@ -250,7 +248,7 @@ This library calculates a quasi-periodic cumulative beat-strength signal (the cb
 ```c 
 void      btt_set_cbss_alpha                     (BTT* self, double alpha);
 double    btt_get_cbss_alpha                     (BTT* self);
-/*default value: BTT_DEFAULT_CBSS_ALPHA (0.9  BPM) */
+/*default value: BTT_DEFAULT_CBSS_ALPHA (0.9) */
 ```
 ##### CBSS Eta
 ```c 
@@ -262,13 +260,13 @@ double    btt_get_cbss_eta                       (BTT* self);
 ```c 
 void      btt_set_beat_prediction_adjustment     (BTT* self, int oss_samples_earlier);
 int       btt_get_beat_prediction_adjustment     (BTT* self);
-/*default value: BTT_DEFAULT_BEAT_PREDICTION_ADJUSTMENT (10  BPM) */
+/*default value: BTT_DEFAULT_BEAT_PREDICTION_ADJUSTMENT (10) */
 ```
 ##### Predicted Beat Trigger Index
 ```c 
 void      btt_set_predicted_beat_trigger_index   (BTT* self, int index);
 int       btt_get_predicted_beat_trigger_index   (BTT* self);
-/*default value: BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX (20  BPM) */
+/*default value: BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX (20) */
 ```
 ##### Predicted Beat Gaussian Width
 ```c 
