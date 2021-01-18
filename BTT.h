@@ -70,7 +70,7 @@ typedef enum
 #define BTT_DEFAULT_ONSET_TREHSHOLD                  0.1   // std devs above mean OSS signal
 #define BTT_DEFAULT_ONSET_TREHSHOLD_MIN              1.0   // raw flux value
 #define BTT_DEFAULT_NOISE_CANCELLATION_THRESHOLD     -74   // dB per freq bin
-#define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   100   // supress harmonics by favoring tempos closer to 100
+#define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN   120   // supress harmonics by favoring tempos closer to 120
 #define BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_WIDTH  75    // oss samples starndard deviation
 #define BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_DECAY   0.999 //
 #define BTT_DEFAULT_GAUSSIAN_TEMPO_HISTOGRAM_WIDTH   5     // oss samples starndard deviation
