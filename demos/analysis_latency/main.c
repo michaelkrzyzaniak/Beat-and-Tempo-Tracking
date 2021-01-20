@@ -9,6 +9,13 @@
 //the beat error is 50.123595
 //**************************************
 
+//**************************************
+//the onset error mean is -0.913972
+//the beat error mean is 50.546271
+//the onset error std dev is 5.753604
+//the beat error std dev is 280.149971
+//**************************************
+
 #include "../../BTT.h"
 #include "../../src/Statistics.h"
 
@@ -79,8 +86,10 @@ int main(void)
     }
 
   fprintf(stderr, "\r\n**************************************\r\n");
-  fprintf(stderr, "the onset error is %f\r\n", online_average_mean(onset_adjustment));
-  fprintf(stderr, "the beat error is %f\r\n", online_average_mean(beat_adjustment));
+  fprintf(stderr, "the onset error mean is %f\r\n", online_average_mean(onset_adjustment));
+  fprintf(stderr, "the beat error mean is %f\r\n", online_average_mean(beat_adjustment));
+  fprintf(stderr, "the onset error std dev is %f\r\n", online_average_std_dev(onset_adjustment));
+  fprintf(stderr, "the beat error std dev is %f\r\n", online_average_std_dev(beat_adjustment));
   fprintf(stderr, "**************************************\r\n\r\n");
 }
 
