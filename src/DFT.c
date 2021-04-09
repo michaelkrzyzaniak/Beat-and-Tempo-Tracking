@@ -499,11 +499,11 @@ void dft_init_hann_window(dft_sample_t* window, int N)
 {
   int i;
   long double phase = 0;
-  long double phase_incrrement = 2*M_PI / (long double)N;
+  long double phase_increment = 2*M_PI / (long double)N;
   for(i=0; i<N; i++)
     {
       *window++ = 0.5 * (1-cos(phase));
-      phase += phase_incrrement;
+      phase += phase_increment;
     }  
 }
 
@@ -512,12 +512,21 @@ void dft_init_hamming_window(dft_sample_t* window, int N)
 {
   int i;
   long double phase = 0;
-  long double phase_incrrement = 2*M_PI / (long double)N;
+  long double phase_increment = 2*M_PI / (long double)N;
   for(i=0; i<N; i++)
     {
       *window++ = 0.54 - 0.46 * cos(phase);
-      phase += phase_incrrement;
+      phase += phase_increment;
     }  
+}
+
+/*-----------------------------------------------------------------------*/
+void   dft_init_half_sine_window(dft_sample_t* window, int N)
+{
+  int i;
+  long double coeff = M_PI / (long double)N;
+  for(i=0; i<N; i++)
+    *window++ = sin(coeff * (i+0.5));
 }
 
 /*-----------------------------------------------------------------------*/
