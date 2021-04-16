@@ -4,8 +4,7 @@
    ___) | || (_| | |_| \__ \ |_| | (__\__ \_| | | |
   |____/ \__\__,_|\__|_|___/\__|_|\___|___(_)_| |_|
 ------------------------------------------------------------------------
-Created by Michael Krzyzaniak at Inside Coach
-Copyright Inside Coach, 2017. All rights reserved
+
 ----------------------------------------------------------------------*/
 #ifndef __IC_STATISTICS__
 #define __IC_STATISTICS__
