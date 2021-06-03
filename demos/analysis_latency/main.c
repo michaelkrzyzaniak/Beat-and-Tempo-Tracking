@@ -13,7 +13,7 @@
 //the onset error mean is -0.913972
 //the beat error mean is 50.546271
 //the onset error std dev is 5.753604
-//the beat error std dev is 280.149971
+//the beat error std dev is 280.149971 (6.4 millisecs)
 //**************************************
 
 #include "../../BTT.h"
