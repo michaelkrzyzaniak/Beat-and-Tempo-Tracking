@@ -120,7 +120,7 @@ void                 btt_set_tracking_mode            (BTT* self, btt_tracking_m
 btt_tracking_mode_t  btt_get_tracking_mode            (BTT* self);
 /*default value: BTT_DEFAULT_TRACKING_MODE (BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING)*/
 ```
-Set the tracking mode.  This is used to turn off parts of the algorithm that you don't need. Default is 
+Set the tracking mode.  This is used to turn off parts of the algorithm that you don't need. Default is BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING
 
 ##### Callback Functions
 ```c
