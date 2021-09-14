@@ -88,6 +88,25 @@ void      btt_process                            (BTT* self, dft_sample_t* input
 ```
 Process audio data
 
+##### Get Sample Rate
+```c
+double      btt_get_sample_rate                            (BTT* self);
+```
+Get the operating sample rate of the algorithm. This is read only and cannot be changed after calling btt_new();
+
+##### Init
+```c
+void      btt_init                            (BTT* self,);
+```
+Put the algorithm into the same state it was in when it would  be in after instantiating it with btt_new_default();
+
+##### Clear
+```c
+void      btt_clear                            (BTT* self);
+```
+
+Keep all of the current  parameter values but clear out the current tempo estimate, beat prediction, etc, so the next audio passed into btt_proceess() will be treated as if it were preceded by silence.
+
 ##### Tracking Modes
 ```c
 typedef enum
@@ -172,6 +191,21 @@ For tempo tracking, this library uses the method described in this paper:
 http://webhome.csc.uvic.ca/~gtzan/output/taslp2014-tempo-gtzan.pdf
 
 At ecah timestep, the oss is autocorrelated, and several of the highest peaks are taken to be candidate tempos. The candidates are scored by cross-correlating the the oss with ideal pulse trains at the respective tempo. The candidate with the highest score is considered to be the current local tempo estimate. The tempo estimator maintains a decaying histogram of tempo estiamtes. For each new estimate, a Gaussian spike whose mean is the new tempo estimate is added into the histogram, and the highest peak in the histogram is taken to be the current tempo of the music.
+
+##### Clear
+```c
+double      btt_get_tempo_bpm                            (BTT* self);
+```
+
+Get the best estimate of the current tempo expressed in beats per minute
+
+##### Clear
+```c
+int      btt_get_beat_period_audio_samples                            (BTT* self);
+```
+
+Get the best estimate of the current tempo expressed in the number of (mono) audio samples between consecutive beats.
+
 
 ##### Autocorrelation Exponent
 ```c 
