@@ -276,7 +276,17 @@ The width of the log-Gaussian tempo histogram weight window.
 For beat tracking, this library uses the method described on page 60 of this paper, with small modifications for robustness:
 https://qmro.qmul.ac.uk/xmlui/bitstream/handle/123456789/15050/adam_stark_phd_thesis_2011.pdf?sequence=1
 
-This library calculates a quasi-periodic cumulative beat-strength signal (the cbss), which combines the onset signal with previous values of the cbss from 1 beat in the past.  This creates a signal that spikes every beat. The beat-tracker then cross-correlates the cbss with an impulse train contining 4 clicks, one beat apart. This strenghtens the peaks in the cbss and determines the location of the beats in time. Finally, at every time step, the location of the next beat is predicted by projecting forward the beat location by one beat. This involves adding a Gaussian spike into a buffer...  This is hard to explain. I'm going to make a video.
+This library calculates a quasi-periodic cumulative beat-strength signal (the cbss), which combines the onset signal with previous values of the cbss from 1 beat in the past.  This creates a signal that spikes every beat. The beat-tracker then cross-correlates the cbss with an impulse train contining 4 clicks, one beat apart. This strenghtens the peaks in the cbss and determines the location of the beats in time. Finally, at every time step, the location of the next beat is predicted by projecting forward the beat location by one beat. This involves adding a Gaussian spike into a buffer...  This is hard to explain. I'vee explained it in more deetail in a paper: 
+https://michaelkrzyzaniak.com/Research/Swarms_Preprint.pdf
+
+##### Count In N
+```c 
+void      btt_set_count_in_n                     (BTT* self, int n);
+int       btt_get_count_in_n                     (BTT* self);
+/*default value: BTT_DEFAULT_COUNT_IN_N (2) */
+```
+The beat tracker uses the average time between the first N onsets to get an initial tempo estimate. For live interaction, this implies that you would clap N times before the beat tracker starts tracking you. For recorded music this works fairly well if there are drums but can be inaccuate if the music starts without strong clearly defined onsets. Once the tracker has been counted it, it will continue forever unless you call btt_clear() or btt_init(), in which case it will wait to be counted in again. 
+
 
 ##### CBSS Alpha
 ```c 

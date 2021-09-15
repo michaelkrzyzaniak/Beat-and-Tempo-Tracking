@@ -80,7 +80,7 @@ typedef enum
 #define BTT_DEFAULT_PREDICTED_BEAT_TRIGGER_INDEX     20    //
 #define BTT_DEFAULT_PREDICTED_BEAT_GAUSSIAN_WIDTH    10    // oss samples
 #define BTT_DEFAULT_IGNORE_SPURIOUS_BEATS_DURATION   40    // percent of beat at current tempo
-#define BTT_DEFAULT_COUNT_IN_N                        2    // percent of beat at current tempo
+#define BTT_DEFAULT_COUNT_IN_N                        2    
 
 #define BTT_DEFAULT_XCORR_NUM_PULSES                 8     //
 #define BTT_DEFAULT_XCORR_PULSE_LOCATIONS            {0, 1, 1.5, 2, 3, 4, 4.5, 6}
