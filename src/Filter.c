@@ -55,11 +55,11 @@ Filter* filter_destroy(Filter* self)
 {
   if(self != NULL)
     {
-      if(self->window == NULL)
+      if(self->window != NULL)
         free(self->window);
-      if(self->coeffs == NULL)
+      if(self->coeffs != NULL)
         free(self->coeffs);
-      if(self->prev_samples == NULL)
+      if(self->prev_samples != NULL)
         free(self->prev_samples);
 
       free(self);
