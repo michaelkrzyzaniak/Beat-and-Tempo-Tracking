@@ -1,4 +1,8 @@
+//OSX: gcc *.c ../../src/*.c -framework AudioToolbox
+//Linux: gcc *.c ../../src/*.c -lasound -lm -lpthread -lrt
+
 #include "Microphone.h"
+
 
 void i_hate_canonical_input_processing(void);
 void make_stdin_cannonical_again();

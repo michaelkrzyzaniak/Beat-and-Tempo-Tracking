@@ -28,13 +28,13 @@ int main(int argc, char* argv[])
   /*make beat tracking object*/
   BTT* btt =  btt_new_default();
   if(btt == NULL){perror("unable to create btt object"); exit(-2);}
-  
-  
+
   /*This will save a little CPU since we jst want the tempo estimate and don't care about the exact location of each beat*/
+  
   btt_set_tracking_mode(btt, BTT_ONSET_AND_TEMPO_TRACKING);
   
   /* don't decay the histogram just assume constant tempo and accumulate estimates over the whole song */
-  btt_set_gaussian_tempo_histogram_decay(btt, 1);
+  //btt_set_gaussian_tempo_histogram_decay(btt, 1);
   
   for(;;)
     {
