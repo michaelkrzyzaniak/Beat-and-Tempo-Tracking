@@ -1,0 +1,645 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D03C589C26F5FC23002000E3 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C589B26F5FC23002000E3 /* AppDelegate.m */; };
+		D03C589F26F5FC23002000E3 /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C589E26F5FC23002000E3 /* SceneDelegate.m */; };
+		D03C58A226F5FC23002000E3 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C58A126F5FC23002000E3 /* ViewController.m */; };
+		D03C58A526F5FC23002000E3 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D03C58A326F5FC23002000E3 /* Main.storyboard */; };
+		D03C58A726F5FC24002000E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D03C58A626F5FC24002000E3 /* Assets.xcassets */; };
+		D03C58AA26F5FC24002000E3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D03C58A826F5FC24002000E3 /* LaunchScreen.storyboard */; };
+		D03C58AD26F5FC24002000E3 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C58AC26F5FC24002000E3 /* main.m */; };
+		D03C58B726F5FC25002000E3 /* TempoTestTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C58B626F5FC25002000E3 /* TempoTestTests.m */; };
+		D03C58C226F5FC25002000E3 /* TempoTestUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = D03C58C126F5FC25002000E3 /* TempoTestUITests.m */; };
+		D03C58D626F5FF21002000E3 /* 5_seconds.aiff in Resources */ = {isa = PBXBuildFile; fileRef = D03C58D526F5FF21002000E3 /* 5_seconds.aiff */; };
+		D03C58D926F5FFBB002000E3 /* Beat-and-Tempo-Tracking in Resources */ = {isa = PBXBuildFile; fileRef = D03C58D326F5FEDC002000E3 /* Beat-and-Tempo-Tracking */; };
+		D03C58E926F6022C002000E3 /* DFT.h in Sources */ = {isa = PBXBuildFile; fileRef = D03C58DE26F60212002000E3 /* DFT.h */; };
+		D03C58EA26F6022C002000E3 /* fastsin.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58DF26F60212002000E3 /* fastsin.c */; };
+		D03C58EB26F6022C002000E3 /* STFT.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E026F60212002000E3 /* STFT.c */; };
+		D03C58EC26F6022C002000E3 /* Statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E126F60212002000E3 /* Statistics.c */; };
+		D03C58ED26F6022C002000E3 /* Filter.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E226F60212002000E3 /* Filter.c */; };
+		D03C58EE26F6022C002000E3 /* DFT.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E326F60212002000E3 /* DFT.c */; };
+		D03C58EF26F6022C002000E3 /* Statistics.h in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E426F60212002000E3 /* Statistics.h */; };
+		D03C58F026F6022C002000E3 /* STFT.h in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E526F60212002000E3 /* STFT.h */; };
+		D03C58F126F6022C002000E3 /* fastsin.h in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E626F60212002000E3 /* fastsin.h */; };
+		D03C58F226F6022C002000E3 /* Filter.h in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E726F60212002000E3 /* Filter.h */; };
+		D03C58F326F6022C002000E3 /* BTT.c in Sources */ = {isa = PBXBuildFile; fileRef = D03C58E826F60212002000E3 /* BTT.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D03C58B326F5FC25002000E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D03C588F26F5FC23002000E3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D03C589626F5FC23002000E3;
+			remoteInfo = TempoTest;
+		};
+		D03C58BE26F5FC25002000E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D03C588F26F5FC23002000E3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D03C589626F5FC23002000E3;
+			remoteInfo = TempoTest;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		D03C589726F5FC23002000E3 /* TempoTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TempoTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D03C589A26F5FC23002000E3 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		D03C589B26F5FC23002000E3 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		D03C589D26F5FC23002000E3 /* SceneDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SceneDelegate.h; sourceTree = "<group>"; };
+		D03C589E26F5FC23002000E3 /* SceneDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SceneDelegate.m; sourceTree = "<group>"; };
+		D03C58A026F5FC23002000E3 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		D03C58A126F5FC23002000E3 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		D03C58A426F5FC23002000E3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		D03C58A626F5FC24002000E3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D03C58A926F5FC24002000E3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D03C58AB26F5FC24002000E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D03C58AC26F5FC24002000E3 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		D03C58B226F5FC25002000E3 /* TempoTestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TempoTestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D03C58B626F5FC25002000E3 /* TempoTestTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TempoTestTests.m; sourceTree = "<group>"; };
+		D03C58B826F5FC25002000E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D03C58BD26F5FC25002000E3 /* TempoTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TempoTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D03C58C126F5FC25002000E3 /* TempoTestUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TempoTestUITests.m; sourceTree = "<group>"; };
+		D03C58C326F5FC25002000E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D03C58D326F5FEDC002000E3 /* Beat-and-Tempo-Tracking */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "Beat-and-Tempo-Tracking"; sourceTree = "<group>"; };
+		D03C58D526F5FF21002000E3 /* 5_seconds.aiff */ = {isa = PBXFileReference; lastKnownFileType = audio.aiff; path = 5_seconds.aiff; sourceTree = "<group>"; };
+		D03C58DE26F60212002000E3 /* DFT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DFT.h; sourceTree = "<group>"; };
+		D03C58DF26F60212002000E3 /* fastsin.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = fastsin.c; sourceTree = "<group>"; };
+		D03C58E026F60212002000E3 /* STFT.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = STFT.c; sourceTree = "<group>"; };
+		D03C58E126F60212002000E3 /* Statistics.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Statistics.c; sourceTree = "<group>"; };
+		D03C58E226F60212002000E3 /* Filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = Filter.c; sourceTree = "<group>"; };
+		D03C58E326F60212002000E3 /* DFT.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DFT.c; sourceTree = "<group>"; };
+		D03C58E426F60212002000E3 /* Statistics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Statistics.h; sourceTree = "<group>"; };
+		D03C58E526F60212002000E3 /* STFT.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = STFT.h; sourceTree = "<group>"; };
+		D03C58E626F60212002000E3 /* fastsin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fastsin.h; sourceTree = "<group>"; };
+		D03C58E726F60212002000E3 /* Filter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Filter.h; sourceTree = "<group>"; };
+		D03C58E826F60212002000E3 /* BTT.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BTT.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D03C589426F5FC23002000E3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58AF26F5FC25002000E3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58BA26F5FC25002000E3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D03C588E26F5FC23002000E3 = {
+			isa = PBXGroup;
+			children = (
+				D03C58DD26F60212002000E3 /* src */,
+				D03C589926F5FC23002000E3 /* TempoTest */,
+				D03C58B526F5FC25002000E3 /* TempoTestTests */,
+				D03C58C026F5FC25002000E3 /* TempoTestUITests */,
+				D03C589826F5FC23002000E3 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D03C589826F5FC23002000E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D03C589726F5FC23002000E3 /* TempoTest.app */,
+				D03C58B226F5FC25002000E3 /* TempoTestTests.xctest */,
+				D03C58BD26F5FC25002000E3 /* TempoTestUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D03C589926F5FC23002000E3 /* TempoTest */ = {
+			isa = PBXGroup;
+			children = (
+				D03C58D326F5FEDC002000E3 /* Beat-and-Tempo-Tracking */,
+				D03C589A26F5FC23002000E3 /* AppDelegate.h */,
+				D03C589B26F5FC23002000E3 /* AppDelegate.m */,
+				D03C589D26F5FC23002000E3 /* SceneDelegate.h */,
+				D03C589E26F5FC23002000E3 /* SceneDelegate.m */,
+				D03C58A026F5FC23002000E3 /* ViewController.h */,
+				D03C58A126F5FC23002000E3 /* ViewController.m */,
+				D03C58A326F5FC23002000E3 /* Main.storyboard */,
+				D03C58A626F5FC24002000E3 /* Assets.xcassets */,
+				D03C58A826F5FC24002000E3 /* LaunchScreen.storyboard */,
+				D03C58AB26F5FC24002000E3 /* Info.plist */,
+				D03C58AC26F5FC24002000E3 /* main.m */,
+				D03C58D526F5FF21002000E3 /* 5_seconds.aiff */,
+			);
+			path = TempoTest;
+			sourceTree = "<group>";
+		};
+		D03C58B526F5FC25002000E3 /* TempoTestTests */ = {
+			isa = PBXGroup;
+			children = (
+				D03C58B626F5FC25002000E3 /* TempoTestTests.m */,
+				D03C58B826F5FC25002000E3 /* Info.plist */,
+			);
+			path = TempoTestTests;
+			sourceTree = "<group>";
+		};
+		D03C58C026F5FC25002000E3 /* TempoTestUITests */ = {
+			isa = PBXGroup;
+			children = (
+				D03C58C126F5FC25002000E3 /* TempoTestUITests.m */,
+				D03C58C326F5FC25002000E3 /* Info.plist */,
+			);
+			path = TempoTestUITests;
+			sourceTree = "<group>";
+		};
+		D03C58DD26F60212002000E3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				D03C58DE26F60212002000E3 /* DFT.h */,
+				D03C58DF26F60212002000E3 /* fastsin.c */,
+				D03C58E026F60212002000E3 /* STFT.c */,
+				D03C58E126F60212002000E3 /* Statistics.c */,
+				D03C58E226F60212002000E3 /* Filter.c */,
+				D03C58E326F60212002000E3 /* DFT.c */,
+				D03C58E426F60212002000E3 /* Statistics.h */,
+				D03C58E526F60212002000E3 /* STFT.h */,
+				D03C58E626F60212002000E3 /* fastsin.h */,
+				D03C58E726F60212002000E3 /* Filter.h */,
+				D03C58E826F60212002000E3 /* BTT.c */,
+			);
+			name = src;
+			path = "TempoTest/Beat-and-Tempo-Tracking/src";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D03C589626F5FC23002000E3 /* TempoTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03C58C626F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTest" */;
+			buildPhases = (
+				D03C589326F5FC23002000E3 /* Sources */,
+				D03C589426F5FC23002000E3 /* Frameworks */,
+				D03C589526F5FC23002000E3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TempoTest;
+			productName = TempoTest;
+			productReference = D03C589726F5FC23002000E3 /* TempoTest.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D03C58B126F5FC25002000E3 /* TempoTestTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03C58C926F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTestTests" */;
+			buildPhases = (
+				D03C58AE26F5FC25002000E3 /* Sources */,
+				D03C58AF26F5FC25002000E3 /* Frameworks */,
+				D03C58B026F5FC25002000E3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D03C58B426F5FC25002000E3 /* PBXTargetDependency */,
+			);
+			name = TempoTestTests;
+			productName = TempoTestTests;
+			productReference = D03C58B226F5FC25002000E3 /* TempoTestTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D03C58BC26F5FC25002000E3 /* TempoTestUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D03C58CC26F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTestUITests" */;
+			buildPhases = (
+				D03C58B926F5FC25002000E3 /* Sources */,
+				D03C58BA26F5FC25002000E3 /* Frameworks */,
+				D03C58BB26F5FC25002000E3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D03C58BF26F5FC25002000E3 /* PBXTargetDependency */,
+			);
+			name = TempoTestUITests;
+			productName = TempoTestUITests;
+			productReference = D03C58BD26F5FC25002000E3 /* TempoTestUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D03C588F26F5FC23002000E3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1140;
+				ORGANIZATIONNAME = "Michael Krzyzaniak";
+				TargetAttributes = {
+					D03C589626F5FC23002000E3 = {
+						CreatedOnToolsVersion = 11.4.1;
+					};
+					D03C58B126F5FC25002000E3 = {
+						CreatedOnToolsVersion = 11.4.1;
+						TestTargetID = D03C589626F5FC23002000E3;
+					};
+					D03C58BC26F5FC25002000E3 = {
+						CreatedOnToolsVersion = 11.4.1;
+						TestTargetID = D03C589626F5FC23002000E3;
+					};
+				};
+			};
+			buildConfigurationList = D03C589226F5FC23002000E3 /* Build configuration list for PBXProject "TempoTest" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D03C588E26F5FC23002000E3;
+			productRefGroup = D03C589826F5FC23002000E3 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D03C589626F5FC23002000E3 /* TempoTest */,
+				D03C58B126F5FC25002000E3 /* TempoTestTests */,
+				D03C58BC26F5FC25002000E3 /* TempoTestUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D03C589526F5FC23002000E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D03C58AA26F5FC24002000E3 /* LaunchScreen.storyboard in Resources */,
+				D03C58A726F5FC24002000E3 /* Assets.xcassets in Resources */,
+				D03C58D626F5FF21002000E3 /* 5_seconds.aiff in Resources */,
+				D03C58D926F5FFBB002000E3 /* Beat-and-Tempo-Tracking in Resources */,
+				D03C58A526F5FC23002000E3 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58B026F5FC25002000E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58BB26F5FC25002000E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D03C589326F5FC23002000E3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D03C58E926F6022C002000E3 /* DFT.h in Sources */,
+				D03C58EA26F6022C002000E3 /* fastsin.c in Sources */,
+				D03C58EB26F6022C002000E3 /* STFT.c in Sources */,
+				D03C58EC26F6022C002000E3 /* Statistics.c in Sources */,
+				D03C58ED26F6022C002000E3 /* Filter.c in Sources */,
+				D03C58EE26F6022C002000E3 /* DFT.c in Sources */,
+				D03C58EF26F6022C002000E3 /* Statistics.h in Sources */,
+				D03C58F026F6022C002000E3 /* STFT.h in Sources */,
+				D03C58F126F6022C002000E3 /* fastsin.h in Sources */,
+				D03C58F226F6022C002000E3 /* Filter.h in Sources */,
+				D03C58F326F6022C002000E3 /* BTT.c in Sources */,
+				D03C58A226F5FC23002000E3 /* ViewController.m in Sources */,
+				D03C589C26F5FC23002000E3 /* AppDelegate.m in Sources */,
+				D03C58AD26F5FC24002000E3 /* main.m in Sources */,
+				D03C589F26F5FC23002000E3 /* SceneDelegate.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58AE26F5FC25002000E3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D03C58B726F5FC25002000E3 /* TempoTestTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D03C58B926F5FC25002000E3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D03C58C226F5FC25002000E3 /* TempoTestUITests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D03C58B426F5FC25002000E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D03C589626F5FC23002000E3 /* TempoTest */;
+			targetProxy = D03C58B326F5FC25002000E3 /* PBXContainerItemProxy */;
+		};
+		D03C58BF26F5FC25002000E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D03C589626F5FC23002000E3 /* TempoTest */;
+			targetProxy = D03C58BE26F5FC25002000E3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		D03C58A326F5FC23002000E3 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D03C58A426F5FC23002000E3 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		D03C58A826F5FC24002000E3 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D03C58A926F5FC24002000E3 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		D03C58C426F5FC25002000E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		D03C58C526F5FC25002000E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D03C58C726F5FC25002000E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTest/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTest;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D03C58C826F5FC25002000E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTest/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTest;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D03C58CA26F5FC25002000E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTestTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTestTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TempoTest.app/TempoTest";
+			};
+			name = Debug;
+		};
+		D03C58CB26F5FC25002000E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTestTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTestTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TempoTest.app/TempoTest";
+			};
+			name = Release;
+		};
+		D03C58CD26F5FC25002000E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTestUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTestUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TempoTest;
+			};
+			name = Debug;
+		};
+		D03C58CE26F5FC25002000E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = TempoTestUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mike.TempoTestUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TempoTest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D03C589226F5FC23002000E3 /* Build configuration list for PBXProject "TempoTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03C58C426F5FC25002000E3 /* Debug */,
+				D03C58C526F5FC25002000E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D03C58C626F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03C58C726F5FC25002000E3 /* Debug */,
+				D03C58C826F5FC25002000E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D03C58C926F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTestTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03C58CA26F5FC25002000E3 /* Debug */,
+				D03C58CB26F5FC25002000E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D03C58CC26F5FC25002000E3 /* Build configuration list for PBXNativeTarget "TempoTestUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D03C58CD26F5FC25002000E3 /* Debug */,
+				D03C58CE26F5FC25002000E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D03C588F26F5FC23002000E3 /* Project object */;
+}
