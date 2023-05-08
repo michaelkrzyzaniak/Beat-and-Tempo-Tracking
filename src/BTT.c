@@ -178,12 +178,12 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       self->count_in_average = online_average_new();
       if(self->count_in_average == NULL) return btt_destroy(self);
 
-      btt_set_metronome_bpm (self, BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN);
-
       btt_set_analysis_latency_onset_adjustment(self, analysis_latency_onset_adjustment);
       btt_set_analysis_latency_beat_adjustment (self, analysis_latency_beat_adjustment );
     
       btt_init(self);
+      
+      btt_set_metronome_bpm (self, BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN);
     }
   return self;
 }
@@ -329,6 +329,7 @@ void      btt_set_metronome_bpm                  (BTT* self, double bpm)
   float min_bpm = btt_get_min_tempo(self);
   if(bpm > max_bpm) bpm = max_bpm;
   if(bpm < min_bpm) bpm = min_bpm;
+  
   self->metronome_lag = round(BPM_TO_LAG(bpm));
 }
 
@@ -909,8 +910,9 @@ double    btt_get_gaussian_tempo_histogram_width         (BTT* self)
 /*--------------------------------------------------------------------*/
 void      btt_set_log_gaussian_tempo_weight_mean (BTT* self, double bpm)
 {
-  if(bpm < 0) bpm = 0;
+  if(bpm < 1) bpm = 1;
   double width = btt_get_log_gaussian_tempo_weight_width(self);
+  
   self->log_gaussian_tempo_weight_mean = 1.0 / BPM_TO_LAG(bpm);
   btt_set_log_gaussian_tempo_weight_width(self, width);
 }
@@ -926,7 +928,10 @@ void      btt_set_log_gaussian_tempo_weight_width(BTT* self, double bpm)
 {
   if(bpm <= 0) return;
   
-  double denominator = bpm / btt_get_log_gaussian_tempo_weight_mean(self);
+  double mean = btt_get_log_gaussian_tempo_weight_mean(self);
+  if(mean <= 0) return;
+  
+  double denominator = bpm / mean;
   self->log_gaussian_tempo_weight_width = denominator * denominator;
 }
 
