@@ -40,8 +40,9 @@
 #define LAG_TO_BPM(lag) (60 * self->oss_sample_rate / ((float)(lag)))
 #define MODULO(x, N)    (((x) % (N) + (N)) % (N))
 
-void btt_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, dft_sample_t* imag, int N);
-void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_t* imag, int N);
+void btt_spectral_flux_stft_callback (void*   SELF, dft_sample_t* real, int N);
+void btt_onset_tracking              (BTT* self, dft_sample_t* real, int N);
+
 void btt_tempo_tracking              (BTT* self);
 void btt_beat_tracking               (BTT* self);
 
@@ -65,7 +66,7 @@ struct Opaque_BTT_Struct
   int                min_lag;
   int                num_tempo_candidates;
   dft_sample_t*      autocorrelation_real;
-  dft_sample_t*      autocorrelation_imag;
+  
   double             autocorrelation_exponent;
   OnlineAverage*     tempo_score_variance;
   double             log_gaussian_tempo_weight_width;
@@ -160,9 +161,7 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
 
       self->autocorrelation_real = calloc(2*self->oss_length, sizeof(*self->autocorrelation_real));
       if(self->autocorrelation_real == NULL) return btt_destroy(self);
-      self->autocorrelation_imag = calloc(2*self->oss_length, sizeof(*self->autocorrelation_imag));
-      if(self->autocorrelation_imag == NULL) return btt_destroy(self);
-
+      
       self->gaussian_tempo_histogram = calloc(self->oss_length, sizeof(*self->gaussian_tempo_histogram));
       if(self->gaussian_tempo_histogram == NULL) return btt_destroy(self);
     
@@ -201,9 +200,6 @@ BTT* btt_destroy(BTT* self)
     
       if(self->autocorrelation_real != NULL)
         free(self->autocorrelation_real);
-    
-      if(self->autocorrelation_imag != NULL)
-        free(self->autocorrelation_imag);
     
       if(self->gaussian_tempo_histogram != NULL)
         free(self->gaussian_tempo_histogram);
@@ -340,14 +336,15 @@ double    btt_get_tempo_certainty(BTT* self)
 }
 
 /*--------------------------------------------------------------------*/
-void btt_onset_tracking              (BTT* self, dft_sample_t* real, dft_sample_t* imag, int N)
+void btt_onset_tracking              (BTT* self, dft_sample_t* real, int N)
 {
   int i;
   int n_over_2  = N >> 1;
   float flux = 0;
   
   //get spectrum magnitude, ignore DCC component in future calculations
-  dft_rect_to_polar(real, imag, n_over_2);
+  rdft_rect_to_polar(real, N);
+  
   real[0] = 0;
   
   //perform log compression
@@ -422,11 +419,29 @@ void btt_tempo_tracking              (BTT* self)
   
   //perform autocorrelation
   memset(self->autocorrelation_real, 0, 2 * self->oss_length * sizeof(*self->autocorrelation_real));
-  memset(self->autocorrelation_imag, 0, 2 * self->oss_length * sizeof(*self->autocorrelation_imag));
+  
   for(i=0; i<self->oss_length; i++)
     self->autocorrelation_real[i] = self->oss[(self->oss_index+i) % self->oss_length];
-  dft_real_generalized_autocorrelation  (self->autocorrelation_real, self->autocorrelation_imag, 2*self->oss_length, self->autocorrelation_exponent);
 
+  rdft_real_generalized_autocorrelation  (self->autocorrelation_real, 2*self->oss_length, self->autocorrelation_exponent);
+  
+  
+  
+  
+  
+  
+  /*
+  fprintf(stderr, "----------\r\n");
+  for(i=0; i<self->oss_length; i++)
+    fprintf(stderr, "%f\r\n", self->autocorrelation_real[i]);
+  exit(-1);
+  */
+  
+  
+  
+  
+  
+  
   //the oss signal only has silence
   if(self->autocorrelation_real[0] == 0)
     return;
@@ -669,13 +684,12 @@ void btt_beat_tracking               (BTT* self)
 }
 
 /*--------------------------------------------------------------------*/
-void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, dft_sample_t* imag, int N)
+void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, int N)
 {
   BTT* self = SELF;
 
   if(self->tracking_mode >= BTT_COUNT_IN_TRACKING)
-    btt_onset_tracking (self, real, imag, N);
-  
+   btt_onset_tracking (self, real, N);
   ++self->num_oss_frames_processed;
 
   if(self->tracking_mode == BTT_METRONOME_MODE)

@@ -24,10 +24,37 @@ void   dft_raw_inverse_dft      (dft_sample_t* real,   dft_sample_t* imag,   int
 void   dft_bit_reverse_indices  (dft_sample_t* real,   dft_sample_t* imag,   int N);
 void   dft_complex_forward_dft  (dft_sample_t* real,   dft_sample_t* imag,   int N);
 void   dft_complex_inverse_dft  (dft_sample_t* real,   dft_sample_t* imag,   int N);
+
 void   dft_real_forward_dft     (dft_sample_t* real,   dft_sample_t* imag,   int N);
 void   dft_real_inverse_dft     (dft_sample_t* real,   dft_sample_t* imag,   int N);
+
 void   dft_2_real_forward_dfts  (dft_sample_t* real_1, dft_sample_t* real_2, dft_sample_t* imag_1, dft_sample_t* imag_2, int N);
 void   dft_2_real_inverse_dfts  (dft_sample_t* real_1, dft_sample_t* real_2, dft_sample_t* imag_1, dft_sample_t* imag_2, int N);
+
+
+/*
+  Note: dft_real_forward_dft takes real input and ignores imag input,
+  and uses a N/2-point complex DFT to produce 2-sided real and imaginary output
+  where the negative frequencies are filled in with the complex conjugates
+  of the positive ones.
+  
+  rdft_forward_dft takes real input and uses a native real DFT to produce
+  single-sided real and imag output in-place, in the order
+  [real[0], real[1] ... real[N/2], imag[N/2-1], imag[1]]
+  imag[0] and imag[N/2] are understood to be 0. This is faster and uses
+  half the space of dft_real_forward_dft.
+*/
+
+void   rdft_bit_reverse_indices (dft_sample_t* real, int N);
+void   rdft_real_forward_dft    (dft_sample_t* real,  int N);
+void   rdft_real_inverse_dft    (dft_sample_t* real,  int N);
+void   rdft_2_real_forward_dfts (dft_sample_t* real_1, dft_sample_t* real_2, int N);
+void   rdft_2_real_inverse_dfts (dft_sample_t* real_1, dft_sample_t* real_2, int N);
+
+void   rdft_real_generalized_autocorrelation  (dft_sample_t* real, int N, double exponent);
+
+void   rdft_rect_to_polar       (dft_sample_t* real,  int N);
+void   rdft_polar_to_rect       (dft_sample_t* real,  int N);
 
 /* user should zero-pad data to twice its original length for correlation and convolution */
 void   dft_real_convolve        (dft_sample_t* real_1, dft_sample_t* real_2, dft_sample_t* imag_1, dft_sample_t* imag_2, int N);

@@ -14,7 +14,7 @@ extern "C"{
 /*--------------------------------------------------------------------*/
 typedef struct Opaque_STFT_Struct STFT;
 
-typedef void (*stft_onprocess_t)(void* onprocess_self, dft_sample_t* real, dft_sample_t* imag, int N);
+typedef void (*stft_onprocess_t)(void* onprocess_self, dft_sample_t* real, int N);
 
 STFT*   stft_new     (int window_size /*power of 2 please*/, int overlap /* 1, 2, 4, 8 */, int should_resynthesize);
 STFT*   stft_destroy (STFT* self);

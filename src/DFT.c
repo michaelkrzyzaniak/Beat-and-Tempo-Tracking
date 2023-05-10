@@ -4,6 +4,7 @@
 |_| \___/\_,_|_| |_\___|_|    \__|_| \__,_|_||_/__/_| \___/_| |_|_|_|
 -------------------------------------------------------------------------*/
 //MODIFIED AUGUST 29 2018 TO FIX ERRORS IN REAL FORWARD AND INVERSE TRANSFORMS!
+//MODIFIED MARCH  25 2023 TO INCLUDE IN PLACE REAL TRANSFORMS
 
 #include "DFT.h"
 #include "fastsin.h"
@@ -12,7 +13,7 @@
 #include <float.h>
 
 /*-----------------------------------------------------------------------*/
-//produces output in bit-reversed order
+//produces output in bit-reversed order (Decimation in Frequency)
 void dft_raw_forward_dft(dft_sample_t* real, dft_sample_t* imag, int N)
 {
   fastsin_t two_pi_over_N = (fastsin_t)(SIN_TWO_PI / N), omega_two_pi_over_n;
@@ -54,7 +55,7 @@ void dft_raw_forward_dft(dft_sample_t* real, dft_sample_t* imag, int N)
 }
 
 /*-----------------------------------------------------------------------*/
-//takes input in bit-reversed order
+//takes input in bit-reversed order (Decimation in Time)
 void dft_raw_inverse_dft(dft_sample_t* real, dft_sample_t* imag, int N)
 {
   fastsin_t two_pi_over_N = (fastsin_t)(SIN_TWO_PI / N), omega_two_pi_over_n;
@@ -282,6 +283,285 @@ void dft_2_real_inverse_dfts(dft_sample_t* real_1, dft_sample_t* real_2, dft_sam
 }
 
 /*-----------------------------------------------------------------------*/
+void   rdft_real_forward_dft     (dft_sample_t* real,  int N)
+{
+  int i, j, k;
+  int n1, n2, n4;
+  int i1, i2, i3, i4;
+  int m=1; while(1<<m < N) m++;
+  
+  fastsin_t A, two_pi_over_N1;
+  dft_sample_t temp, cc, ss, t1, t2;
+  
+  rdft_bit_reverse_indices(real, N);
+  
+  //length 2 butterfiles
+  for(i=0; i<N; i+=2)
+    {
+      temp      = real[i];
+      real[i]   = temp + real[i+1];
+      real[i+1] = temp - real[i+1];
+    }
+    
+  //other butterflies
+  n2 = 1;
+  for(k=1; k<m; k++)
+    {
+      n4 = n2;
+      n2 <<= 1;
+      n1 = n2 << 1;
+      two_pi_over_N1 = SIN_PI / n2;
+      
+      for(i=0; i<N; i+=n1)
+        {
+          temp = real[i];
+          real[i]   = temp + real[i+n2];
+          real[i+n2] = temp - real[i+n2];
+          real[i + n2 + n4] = -real[i + n2 + n4];
+          A = two_pi_over_N1;
+          
+          for(j=1; j<n4; j++)
+            {
+              i1 = i+j;
+              i2 = i-j+n2;
+              i3 = i+j+n2;
+              i4 = i-j+n1;
+              cc = fastcos(A);
+              ss = fastsin(A);
+              A += two_pi_over_N1;
+              t1 = real[i3] * cc + real[i4] * ss;
+              t2 = real[i3] * ss - real[i4] * cc;
+              real[i4] =  real[i2] - t2;
+              real[i3] = -real[i2] - t2;
+              real[i2] =  real[i1] - t1;
+              real[i1] =  real[i1] + t1;
+            }
+        }
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+void   rdft_real_inverse_dft     (dft_sample_t* real,  int N)
+{
+  int i, j, k;
+  int n2, n4, n8;
+  int is, id, i1, i2, i3, i4, i5, i6, i7, i8;
+  
+  fastsin_t two_pi_over_N2, A, A3;
+  dft_sample_t t1, t2, t3, t4, t5;
+  dft_sample_t cc1, cc3, ss1, ss3;
+  dft_sample_t one_over_root_2 = fastsin(SIN_PI >> 2);
+  
+  int m=1; while(1<<m < N) m++;
+
+  //L shaped butterflies
+  n2 = N << 1;
+  for(k=1; k<m; k++)
+    {
+      is = 0;
+      id = n2;
+      n2 >>= 1;
+      n4 = n2 >> 2;
+      n8 = n4 >> 1;
+      two_pi_over_N2 = (SIN_PI / n2) << 1;
+
+      while(is < N-1)
+        {
+          for(i=is; i<N; i+=id)
+            {
+              i1 = i;
+              i2 = i1 + n4;
+              i3 = i2 + n4;
+              i4 = i3 + n4;
+              
+              t1 = real[i1] - real[i3];
+              real[i1] =  real[i1] + real[i3];
+              real[i2] *= 2;
+              real[i3] = t1 - 2*real[i4];
+              real[i4] = t1 + 2*real[i4];
+              if(n4 == 1)
+                continue;
+              i1 += n8;
+              i2 += n8;
+              i3 += n8;
+              i4 += n8;
+              t1 = (real[i2] - real[i1]) * one_over_root_2;
+              t2 = (real[i4] + real[i3]) * one_over_root_2;
+              real[i1] += real[i2];
+              real[i2] = real[i4] - real[i3];
+              real[i3] = 2 * ((-t2) - t1);
+              real[i4] = 2 * ((-t2) + t1);
+            }
+          is = 2 * id - n2;
+          id <<= 2;
+        }
+      A = two_pi_over_N2;
+        
+      for(j=2; j<=n8; j++)
+        {
+          A3 = 3 * A;
+          cc1 = fastcos(A);
+          ss1 = fastsin(A);
+          cc3 = fastcos(A3);
+          ss3 = fastsin(A3);
+          A = j * two_pi_over_N2;
+          is = 0;
+          id = n2 << 1;
+  
+          while(is < N-1)
+            {
+              for(i=is; i<N; i+=id)
+                {
+                  i1 = i+j - 1;
+                  i2 = i1 + n4;
+                  i3 = i2 + n4;
+                  i4 = i3 + n4;
+                  i5 = i + n4 - j + 1;
+                  i6 = i5 + n4;
+                  i7 = i6 + n4;
+                  i8 = i7 + n4;
+                  t1 = real[i1] - real[i6];
+                  real[i1] += real[i6];
+                  t2 = real[i5] - real[i2];
+                  real[i5] += real[i2];
+                  t3 = real[i8] + real[i3];
+                  real[i6] = real[i8] - real[i3];
+                  t4 = real[i4] + real[i7];
+                  real[i2] = real[i4] - real[i7];
+                  t5 = t1 - t4;
+                  t1 += t4;
+                  t4 = t2 - t3;
+                  t2 += t3;
+                  real[i3] =  t5*cc1 + t4*ss1;
+                  real[i7] =  -t4*cc1 + t5*ss1;
+                  real[i4] = t1*cc3 - t2*ss3;
+                  real[i8] = t2*cc3 + t1*ss3;
+                }
+              is = 2 * id - n2;
+              id *= 4;
+            }
+        }
+    }
+  
+  //length 2 butterflies
+  is = 1;
+  id = 4;
+  while(is < N)
+    {
+      for(i=is-1; i<N; i+=id)
+        {
+          i1 = i + 1;
+          t1 = real[i];
+          real[i] = t1 + real[i1];
+          real[i1] = t1 - real[i1];
+        }
+      is = 2 * id - 1;
+      id *= 4;
+    }
+  
+  rdft_bit_reverse_indices(real, N);
+  
+  for(i=0; i<N; i++)
+    real[i] /= (dft_sample_t)N;
+}
+
+/*-----------------------------------------------------------------------*/
+void rdft_2_real_forward_dfts(dft_sample_t* real_1, dft_sample_t* real_2, int N)
+{
+  int i;
+  int N_over_2 = N >> 1;
+  
+  dft_sample_t *real = real_1, *imag = real_2;
+  dft_sample_t r1, i1, r2, i2;
+  
+  dft_raw_forward_dft(real, imag, N);
+  dft_bit_reverse_indices(real, imag, N);
+
+  real_1[0] = real[0];
+  real_2[0] = imag[0];
+  real_1[N_over_2] = real[N_over_2];
+  real_2[N_over_2] = imag[N_over_2];
+  
+  for(i=1; i<N_over_2; i++)
+    {
+      r1 = 0.5 * (real[i] + real[N-i]);
+      i1 = 0.5 * (imag[i] - imag[N-i]);
+      r2 = 0.5 * (imag[i] + imag[N-i]);
+      i2 = -0.5 * (real[i] - real[N-i]);
+      real_1[i]   = r1;
+      real_1[N-i] = i1;
+      real_2[i]   = r2;
+      real_2[N-i] = i2;
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+void rdft_2_real_inverse_dfts(dft_sample_t* real_1, dft_sample_t* real_2, int N)
+{
+  int i;
+  int N_over_2 = N >> 1;
+  dft_sample_t *real = real_1, *imag = real_2;
+  dft_sample_t r1, i1, r2, i2;
+  
+  //already correct
+  /*
+  real[0] = real_1[0];
+  imag[0] = real_2[0];
+  real[N_over_2] = real_1[N_over_2];
+  imag[N_over_2] = real_2[N_over_2];
+  */
+  
+  for(i=1; i<N_over_2; i++)
+    {
+      r1 = real_1[i]    - real_2[N-i];
+      i1 = real_1[N-i]  + real_2[i];
+      r2 = real_1[i]    + real_2[N-i];
+      i2 = -real_1[N-i] + real_2[i];
+      
+      real[i] = r1;
+      imag[i] = i1;
+      real[N-i] = r2;
+      imag[N-i] = i2;
+    }
+
+  dft_bit_reverse_indices(real, imag, N);
+  dft_raw_inverse_dft    (real, imag, N);
+}
+
+/*-----------------------------------------------------------------------*/
+void   rdft_rect_to_polar       (dft_sample_t* real,  int N)
+{
+  dft_sample_t temp;
+  dft_sample_t* imag = real + N - 1;
+  ++real;
+  N >>= 1;
+  while(N-- > 1)
+    {
+      temp = *real;
+      *real = hypot(*real, *imag);
+      *imag = atan2(*imag, temp);
+      ++real, --imag;
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+void   rdft_polar_to_rect       (dft_sample_t* real,  int N)
+{
+  dft_sample_t temp;
+  dft_sample_t* imag = real + N - 1;
+  ++real;
+  N >>= 1;
+
+  while(N-- > 1)
+    {
+      temp = *real;
+      *real = *real * cos(*imag);
+      *imag = temp  * sin(*imag);
+      ++real, --imag;
+    }
+}
+
+/*-----------------------------------------------------------------------*/
 void   dft_real_convolve       (dft_sample_t* real_1, dft_sample_t* real_2, dft_sample_t* imag_1, dft_sample_t* imag_2, int N)
 {
   int i;
@@ -360,29 +640,74 @@ void   dft_real_generalized_autocorrelation  (dft_sample_t* real  , dft_sample_t
 }
 
 /*-----------------------------------------------------------------------*/
-void dft_bit_reverse_indices(dft_sample_t* real, dft_sample_t* imag, int N)
+void   rdft_real_generalized_autocorrelation  (dft_sample_t* real, int N, double exponent)
 {
-  int N_minus_1 = N-1;
-  int highest_bit = N >> 1;
-  int n, next_bit, n_reversed=0;
+  int i;
+  int n_over_2 = N >> 1;
+  
+  rdft_real_forward_dft(real, N);
+  rdft_rect_to_polar(real, N);
+  
+  real[0] = pow(real[0], exponent);
+  for(i=1; i<n_over_2; i++)
+    {
+      real[i] = pow(real[i], exponent);
+      real[N-i-1] = 0;
+    }
+  real[n_over_2] = pow(real[n_over_2], exponent);
+  
+  //it seems like polar to rect should be performed here but the Percival Tzanetakis paper says not in Eq 3.
+  //further testing should probably be done
+  
+  rdft_real_inverse_dft(real, N);
+}
+
+
+/*-----------------------------------------------------------------------*/
+void rdft_bit_reverse_indices(dft_sample_t* real, int N)
+{
   dft_sample_t temp;
+  
+  int N_over_2 = N >> 1;
+  unsigned n, bit, rev;
+  unsigned n_reversed = N_over_2;
   
   for(n=1; n<N; n++)
     {
-      next_bit = highest_bit;
-      while((next_bit + n_reversed) > N_minus_1) next_bit >>= 1;  //find highest unpopulated bit
-      n_reversed &= next_bit - 1;                                 //clear all higher bits
-      n_reversed |= next_bit;                                     //set new bit
-      
       if(n_reversed > n)
         {
           temp            = real[n]        ;
           real[n]         = real[n_reversed];
           real[n_reversed] = temp           ;
-          temp            = imag[n]        ;
-          imag[n]         = imag[n_reversed];
-          imag[n_reversed] = temp           ;          
         }
+      bit = ~n & (n + 1);
+      rev = N_over_2 / bit;
+      n_reversed ^= (N - 1) & ~(rev - 1);
+    }
+}
+
+/*-----------------------------------------------------------------------*/
+void dft_bit_reverse_indices(dft_sample_t* real, dft_sample_t* imag, int N)
+{
+  dft_sample_t temp;
+  int N_over_2 = N >> 1;
+  unsigned n, bit, rev;
+  unsigned n_reversed = N_over_2;
+  
+  for(n=1; n<N; n++)
+    {
+      if(n_reversed > n)
+        {
+          temp            = real[n]         ;
+          real[n]         = real[n_reversed];
+          real[n_reversed] = temp           ;
+          temp            = imag[n]         ;
+          imag[n]         = imag[n_reversed];
+          imag[n_reversed] = temp           ;
+        }
+      bit = ~n & (n + 1);
+      rev = N_over_2 / bit;
+      n_reversed ^= (N - 1) & ~(rev - 1);
     }
 }
 

@@ -17,7 +17,6 @@ struct Opaque_STFT_Struct
   dft_sample_t* running_input;
   dft_sample_t* running_output;
   dft_sample_t* real;
-  dft_sample_t* imag;
 };
 
 /*--------------------------------------------------------------------*/
@@ -38,12 +37,10 @@ STFT* stft_new(int window_size /*power of 2 please*/, int overlap /* 1, 2, 4, 8 
       self->running_input        = calloc(self->window_size, sizeof(*(self->running_input)));
       self->running_output       = calloc(self->fft_N      , sizeof(*(self->running_output)));
       self->real                 = calloc(self->fft_N      , sizeof(*(self->real)));
-      self->imag                 = calloc(self->fft_N      , sizeof(*(self->imag)));
       if(self->window           == NULL) return stft_destroy(self);
       if(self->running_input    == NULL) return stft_destroy(self);
       if(self->running_output   == NULL) return stft_destroy(self);
       if(self->real             == NULL) return stft_destroy(self);
-      if(self->imag             == NULL) return stft_destroy(self);
   
       //no choice for now
       dft_init_blackman_window(self->window, self->window_size);
@@ -64,8 +61,6 @@ STFT* stft_destroy(STFT* self)
         free(self->running_output);
       if(self->real != NULL)
         free(self->real);
-      if(self->imag != NULL)
-        free(self->imag);
     
       free(self);
     }
@@ -97,21 +92,18 @@ void stft_process(STFT* self, dft_sample_t* real_input, int len, stft_onprocess_
           for(j=0; j<self->window_size; j++)
             {
               self->real[j] = self->running_input[(self->input_index+j) % self->window_size];
-              self->imag[j] = 0;
             }
 
           dft_apply_window(self->real, self->window, self->window_size);
           for(j=self->window_size; j<self->fft_N; j++)
             {
               self->real[j] = 0;
-              self->imag[j] = 0;
             }
-        
-          dft_real_forward_dft(self->real, self->imag, self->fft_N);
-          onprocess           (onprocess_self, self->real, self->imag, self->fft_N);
+          rdft_real_forward_dft(self->real, self->fft_N);
+          onprocess           (onprocess_self, self->real, self->fft_N);
           if(self->should_resynthesize)
             {
-              dft_real_inverse_dft(self->real, self->imag, self->fft_N);
+              rdft_real_inverse_dft(self->real, self->fft_N);
               for(j=0; j<self->fft_N; j++)
                 self->running_output[(self->output_index+j) % self->fft_N] += self->real[j];
             }
