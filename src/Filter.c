@@ -21,6 +21,7 @@ struct opaque_filter_struct
   filter_window_t window_type;
   int             order, max_order;
   float           cutoff;
+  //float           cutoff2;
   float           sample_rate;
   float*          prev_samples;
   float*          window;
@@ -252,7 +253,28 @@ void filter_init_highpass_coeffs(Filter* self)
 /*-------------------------------------------------*/
 void filter_init_bandpass_coeffs(Filter* self)
 {
+  int i, n=self->order+1;
+  float m_over_2 = self->order / 2.0;
+  float f_t = self->cutoff / self->sample_rate;
+  float two_pi_f_t = TWO_PI * f_t;
+  float i_minus_m_over_2;
+  float temp;
+  
+  for(i=0; i<n; i++)
+    {
+      if(i != m_over_2)
+        {
+          i_minus_m_over_2 = i - m_over_2;
+          temp = sin(two_pi_f_t * i_minus_m_over_2);
+          temp /= M_PI * i_minus_m_over_2;
+          temp *= -1;
+        }
+      else
+        temp = 1 - (2.0 * f_t);
 
+      temp *= self->window[i];
+      self->coeffs[i] = temp;
+    }
 }
 
 /*-------------------------------------------------*/
