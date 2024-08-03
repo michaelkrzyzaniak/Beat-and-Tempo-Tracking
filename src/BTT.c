@@ -708,7 +708,7 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, int N)
   
   if((self->tracking_mode == BTT_ONSET_AND_TEMPO_TRACKING) ||
      (self->tracking_mode == BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING))
-      if(self->num_oss_frames_processed >= self->oss_length)
+      if((int) self->num_oss_frames_processed >= self->oss_length)
         btt_tempo_tracking(self);
 
   if(self->tracking_mode >= BTT_ONSET_AND_TEMPO_AND_BEAT_TRACKING)

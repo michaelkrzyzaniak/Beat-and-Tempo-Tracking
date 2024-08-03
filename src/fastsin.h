@@ -21,7 +21,7 @@ float fastcos  (fastsin_t angle);
 #define fastsin(angle) (*(sinTable + ((angle) >> 20)))
 #define fastcos(angle) (*(sinTable + (((angle) + SIN_HALF_PI) >> 20)))
 
-const extern float sinTable[SIN_NUM_SAMPLES];
+extern const float sinTable[SIN_NUM_SAMPLES];
 
 
 //slowsin

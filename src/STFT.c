@@ -12,7 +12,7 @@ struct Opaque_STFT_Struct
   int           hop_size;
   int           sample_counter;
   int           input_index;
-  int           output_index;;
+  int           output_index;
   dft_sample_t* window;
   dft_sample_t* running_input;
   dft_sample_t* running_output;
@@ -144,7 +144,7 @@ struct Opaque_TWO_STFTS_Struct
   int           hop_size;
   int           sample_counter;
   int           input_index;
-  int           output_index;;
+  int           output_index;
   dft_sample_t* window;
   dft_sample_t* running_input;
   dft_sample_t* running_output;

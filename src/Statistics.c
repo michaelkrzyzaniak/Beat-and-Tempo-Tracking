@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <string.h> //memset, memcpy
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 /*--------------------------------------------------------------------*/
 /*--___-------_-_-------------------------------------------------------
    / _ \ _ _ | (_)_ _  ___    /_\__ _____ _ _ __ _ __ _ ___ 
@@ -211,7 +214,7 @@ void moving_average_update(MovingAverage* self, double     x)
   ++self->current_sample_index;
   self->current_sample_index %= self->N;
 
-  if(online_average_n(self->online) < self->N)
+  if((unsigned int) online_average_n(self->online) < self->N)
     {
       online_average_update(self->online, x);
       self->variance = online_average_variance(self->online);
@@ -225,7 +228,7 @@ void moving_average_update(MovingAverage* self, double     x)
       self->variance = self->s / self->N;
       self->mean     = new_mean;
     }
-};
+}
 
 /*--------------------------------------------------------------------*/
 /*--___-------_-_------------___------------------------_---------------
@@ -496,13 +499,13 @@ double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
   self->onset_signal = next;
   
   return result;
-};
+}
 
 
 /*--------------------------------------------------------------------*/
 double     statistics_random_flat()
 {
-  return random() / (double)RAND_MAX;
+  return rand() / (double)RAND_MAX;
 }
 
 /*--------------------------------------------------------------------*/

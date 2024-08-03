@@ -21,7 +21,7 @@ void   dft_apply_window         (dft_sample_t* real,   dft_sample_t* window, int
 
 void   dft_raw_forward_dft      (dft_sample_t* real,   dft_sample_t* imag,   int N);
 void   dft_raw_inverse_dft      (dft_sample_t* real,   dft_sample_t* imag,   int N);
-void   dft_bit_reverse_indices  (dft_sample_t* real,   dft_sample_t* imag,   int N);
+void   dft_bit_reverse_indices  (dft_sample_t* real,   dft_sample_t* imag,   unsigned int N);
 void   dft_complex_forward_dft  (dft_sample_t* real,   dft_sample_t* imag,   int N);
 void   dft_complex_inverse_dft  (dft_sample_t* real,   dft_sample_t* imag,   int N);
 
@@ -45,7 +45,7 @@ void   dft_2_real_inverse_dfts  (dft_sample_t* real_1, dft_sample_t* real_2, dft
   half the space of dft_real_forward_dft.
 */
 
-void   rdft_bit_reverse_indices (dft_sample_t* real, int N);
+void   rdft_bit_reverse_indices (dft_sample_t* real, unsigned int N);
 void   rdft_real_forward_dft    (dft_sample_t* real,  int N);
 void   rdft_real_inverse_dft    (dft_sample_t* real,  int N);
 void   rdft_2_real_forward_dfts (dft_sample_t* real_1, dft_sample_t* real_2, int N);

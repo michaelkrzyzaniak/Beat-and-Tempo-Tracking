@@ -12,6 +12,9 @@
 #include <math.h>
 #include <float.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 /*-----------------------------------------------------------------------*/
 //produces output in bit-reversed order (Decimation in Frequency)
 void dft_raw_forward_dft(dft_sample_t* real, dft_sample_t* imag, int N)
@@ -664,11 +667,11 @@ void   rdft_real_generalized_autocorrelation  (dft_sample_t* real, int N, double
 
 
 /*-----------------------------------------------------------------------*/
-void rdft_bit_reverse_indices(dft_sample_t* real, int N)
+void rdft_bit_reverse_indices(dft_sample_t* real, unsigned int N)
 {
   dft_sample_t temp;
   
-  int N_over_2 = N >> 1;
+  unsigned int N_over_2 = N >> 1;
   unsigned n, bit, rev;
   unsigned n_reversed = N_over_2;
   
@@ -687,10 +690,10 @@ void rdft_bit_reverse_indices(dft_sample_t* real, int N)
 }
 
 /*-----------------------------------------------------------------------*/
-void dft_bit_reverse_indices(dft_sample_t* real, dft_sample_t* imag, int N)
+void dft_bit_reverse_indices(dft_sample_t* real, dft_sample_t* imag, unsigned int N)
 {
   dft_sample_t temp;
-  int N_over_2 = N >> 1;
+  unsigned int N_over_2 = N >> 1;
   unsigned n, bit, rev;
   unsigned n_reversed = N_over_2;
   
