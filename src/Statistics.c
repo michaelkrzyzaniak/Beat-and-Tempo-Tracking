@@ -502,7 +502,11 @@ double     adaptive_threshold_update(AdaptiveThreshold* self, double     x)
 /*--------------------------------------------------------------------*/
 double     statistics_random_flat()
 {
+#if defined(_WIN32)
+  return rand() / (double)RAND_MAX;
+#else
   return random() / (double)RAND_MAX;
+#endif
 }
 
 /*--------------------------------------------------------------------*/
@@ -535,4 +539,3 @@ double     statistics_random_cauchy(double peak_location, double half_width_at_h
   result += peak_location;
   return result;
 }
-

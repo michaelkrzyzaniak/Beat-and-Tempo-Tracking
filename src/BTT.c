@@ -51,6 +51,7 @@ struct Opaque_BTT_Struct
 {
   STFT*              spectral_flux_stft;
   dft_sample_t*      prev_spectrum_magnitude;
+  pvt_onset_method   onset_method;
   int                should_normalize_amplitude;
   double             spectral_compression_gamma;
   double             noise_cancellation_threshold;
@@ -65,6 +66,9 @@ struct Opaque_BTT_Struct
   int                max_lag;
   int                min_lag;
   int                num_tempo_candidates;
+  int*               candidate_tempo_lags;
+  float*             candidate_score_max;
+  float*             candidate_score_variance;
   dft_sample_t*      autocorrelation_real;
   
   double             autocorrelation_exponent;
@@ -181,6 +185,7 @@ BTT* btt_new(int spectral_flux_stft_len, int spectral_flux_stft_overlap, int oss
       btt_set_analysis_latency_beat_adjustment (self, analysis_latency_beat_adjustment );
     
       btt_init(self);
+      if(self->num_tempo_candidates == 0) return btt_destroy(self);
       
       btt_set_metronome_bpm (self, BTT_DEFAULT_LOG_GAUSSIAN_TEMPO_WEIGHT_MEAN);
     }
@@ -216,6 +221,9 @@ BTT* btt_destroy(BTT* self)
       online_average_destroy(self->tempo_score_variance);
       online_average_destroy(self->count_in_average);
     
+      free(self->candidate_tempo_lags);
+      free(self->candidate_score_max);
+      free(self->candidate_score_variance);
       free(self);
     }
   return (BTT*) NULL;
@@ -224,6 +232,7 @@ BTT* btt_destroy(BTT* self)
 /*--------------------------------------------------------------------*/
 void      btt_init(BTT* self)
 {
+  btt_set_onset_detection_method          (self, PVT_ONSET_SPECTRAL_FLUX);
   btt_set_min_tempo                       (self, BTT_DEFAULT_MIN_TEMPO);
   btt_set_max_tempo                       (self, BTT_DEFAULT_MAX_TEMPO);
   btt_set_spectral_compression_gamma      (self, BTT_DEFAULT_SPECTRAL_COMPRESSION_GAMMA);
@@ -259,6 +268,16 @@ void      btt_clear(BTT* self)
   self->num_oss_frames_processed    = 0;
   self->oss_index                   = 0;
   self->count_in_count              = 0;
+  self->last_count_in_time          = 0;
+  self->ignore_beats_until          = 0;
+  self->predicted_beat_index        = 0;
+  self->metronome_clock             = 0;
+  stft_clear(self->spectral_flux_stft);
+  filter_clear(self->oss_filter);
+  adaptive_threshold_clear(self->onset_threshold);
+  online_average_init(self->tempo_score_variance);
+  memset(self->prev_spectrum_magnitude, 0,
+         (size_t)stft_get_N(self->spectral_flux_stft) * sizeof(*self->prev_spectrum_magnitude));
   online_average_init (self->count_in_average);
   memset(self->oss, 0, self->oss_length * sizeof(*self->oss));
   btt_init_tempo(self, 0);
@@ -310,10 +329,10 @@ int       btt_get_beat_period_audio_samples(BTT* self)
 /*--------------------------------------------------------------------*/
 double    btt_get_tempo_bpm(BTT* self)
 {
-  if(self->beat_period_oss_samples <=0)
+  if(self->tracking_mode == BTT_METRONOME_MODE)
+    return self->metronome_lag > 0 ? LAG_TO_BPM(self->metronome_lag) : 0;
+  else if(self->beat_period_oss_samples <=0)
     return 0;
-  else if(self->tracking_mode == BTT_METRONOME_MODE)
-    return LAG_TO_BPM(self->metronome_lag);
   else
     return LAG_TO_BPM(self->beat_period_oss_samples);
 }
@@ -336,6 +355,32 @@ double    btt_get_tempo_certainty(BTT* self)
 }
 
 /*--------------------------------------------------------------------*/
+static unsigned long long btt_offset_time(unsigned long long time, long long offset)
+{
+  if(offset < 0) {
+    unsigned long long amount = (unsigned long long)(-(offset + 1)) + 1;
+    return time < amount ? 0 : time - amount;
+  }
+  return time + (unsigned long long)offset;
+}
+
+int btt_set_onset_detection_method(BTT* self, pvt_onset_method method)
+{
+  if(!self || method < PVT_ONSET_SPECTRAL_FLUX
+           || method > PVT_ONSET_HIGH_FREQUENCY_FLUX) return 0;
+  if(self->onset_method != method) {
+    self->onset_method = method;
+    memset(self->prev_spectrum_magnitude, 0,
+           (size_t)stft_get_N(self->spectral_flux_stft) * sizeof(*self->prev_spectrum_magnitude));
+  }
+  return 1;
+}
+
+pvt_onset_method btt_get_onset_detection_method(BTT* self)
+{
+  return self ? self->onset_method : PVT_ONSET_SPECTRAL_FLUX;
+}
+
 void btt_onset_tracking              (BTT* self, dft_sample_t* real, int N)
 {
   int i;
@@ -364,12 +409,15 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, int N)
   if(self->should_normalize_amplitude)
     dft_normalize_magnitude(real, n_over_2);
   
-  //Calculate flux and save spectrum
-  for(i=1; i<n_over_2; i++)
-    {
+  // Keep the historical accumulation order for the default method.
+  if(self->onset_method == PVT_ONSET_SPECTRAL_FLUX)
+    for(i=1; i<n_over_2; i++)
       flux += (real[i] > self->prev_spectrum_magnitude[i]) ? real[i] - self->prev_spectrum_magnitude[i] : 0;
-      self->prev_spectrum_magnitude[i] = real[i];
-    }
+  else
+    flux = pvt_onset_strength(real, self->prev_spectrum_magnitude,
+                              (size_t)n_over_2, self->onset_method);
+  memcpy(self->prev_spectrum_magnitude, real,
+         (size_t)n_over_2 * sizeof(*real));
   
   //10HZ low-pass filter flux to obtaion OSS, delays oss by (filter_order-1) / 2 oss samples
   filter_process_data(self->oss_filter, &flux, 1);
@@ -383,7 +431,7 @@ void btt_onset_tracking              (BTT* self, dft_sample_t* real, int N)
         if(self->onset_callback != NULL)
           {
             unsigned long long t = self->num_audio_samples_processed;
-            t -= self->analysis_latency_onset_adjustment;
+            t = btt_offset_time(t, -(long long)self->analysis_latency_onset_adjustment);
             self->onset_callback(self->onset_callback_self, t);
           }
       
@@ -460,7 +508,8 @@ void btt_tempo_tracking              (BTT* self)
   
   //pick peaks from autocorrelation
   float old_derivative = 1, new_derivative;
-  int candidate_tempo_lags[self->num_tempo_candidates];
+  int* candidate_tempo_lags = self->candidate_tempo_lags;
+  if(self->num_tempo_candidates == 0) return;
   for(i=0; i<self->num_tempo_candidates; candidate_tempo_lags[i++]=self->min_lag);
   int min_lag_index = 0;
   for(i=self->min_lag; i<self->max_lag-1; i++)
@@ -481,8 +530,8 @@ void btt_tempo_tracking              (BTT* self)
     }
 
   //cross correlate with pulses and get score components
-  float score_max     [self->num_tempo_candidates];
-  float score_variance[self->num_tempo_candidates];
+  float* score_max = self->candidate_score_max;
+  float* score_variance = self->candidate_score_variance;
   float sum_of_score_max      = 0;
   float sum_of_score_variance = 0;
   int   num_pulses            = BTT_DEFAULT_XCORR_NUM_PULSES;
@@ -656,12 +705,13 @@ void btt_beat_tracking               (BTT* self)
     {
       if(self->num_oss_frames_processed >= self->ignore_beats_until)
         {
-          self->ignore_beats_until = (int)(self->num_oss_frames_processed + (self->beat_period_oss_samples * self->ignore_spurious_beats_duration));
+          self->ignore_beats_until = self->num_oss_frames_processed + (unsigned long long)(self->beat_period_oss_samples * self->ignore_spurious_beats_duration);
           if(self->beat_callback != NULL)
             {
               unsigned long long t = self->num_audio_samples_processed;
-              t += self->beat_prediction_adjustment * stft_get_hop(self->spectral_flux_stft);
-              t -= self->analysis_latency_beat_adjustment_fine;
+              t = btt_offset_time(t,
+                  (long long)self->beat_prediction_adjustment * stft_get_hop(self->spectral_flux_stft)
+                  - self->analysis_latency_beat_adjustment_fine);
               self->beat_callback (self->beat_callback_self, t);
             }
         }
@@ -687,6 +737,7 @@ void btt_beat_tracking               (BTT* self)
 void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, int N)
 {
   BTT* self = SELF;
+  self->num_audio_samples_processed += (unsigned)stft_get_hop(self->spectral_flux_stft);
 
   if(self->tracking_mode >= BTT_COUNT_IN_TRACKING)
    btt_onset_tracking (self, real, N);
@@ -699,7 +750,7 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, int N)
         {
           unsigned long long t = self->num_audio_samples_processed;
           t += 0.5 * stft_get_hop(self->spectral_flux_stft);
-          self->beat_callback (self->beat_callback_self, t);
+          if(self->beat_callback) self->beat_callback (self->beat_callback_self, t);
           self->metronome_clock = 0;
         }
       return;
@@ -720,8 +771,8 @@ void btt_spectral_flux_stft_callback(void* SELF, dft_sample_t* real, int N)
 /* resynthesized samples, if any, returned in real_input */
 void btt_process(BTT* self, dft_sample_t* input, int num_samples)
 {
+  if(!self || !input || num_samples <= 0) return;
   stft_process(self->spectral_flux_stft, input, num_samples, btt_spectral_flux_stft_callback, self);
-  self->num_audio_samples_processed += num_samples;
 }
 
 /*--------------------------------------------------------------------*/
@@ -840,6 +891,24 @@ void      btt_set_num_tempo_candidates         (BTT* self, int num_candidates)
 {
   if(num_candidates < 1)
     num_candidates = 1;
+  if(num_candidates == self->num_tempo_candidates) return;
+  /* Allocate outside processing; preserve the previous configuration on failure. */
+  int* lags = calloc((size_t)num_candidates, sizeof(*lags));
+  float* maxima = calloc((size_t)num_candidates, sizeof(*maxima));
+  float* variances = calloc((size_t)num_candidates, sizeof(*variances));
+  if(lags == NULL || maxima == NULL || variances == NULL)
+    {
+      free(lags);
+      free(maxima);
+      free(variances);
+      return;
+    }
+  free(self->candidate_tempo_lags);
+  free(self->candidate_score_max);
+  free(self->candidate_score_variance);
+  self->candidate_tempo_lags = lags;
+  self->candidate_score_max = maxima;
+  self->candidate_score_variance = variances;
   self->num_tempo_candidates = num_candidates;
 }
 

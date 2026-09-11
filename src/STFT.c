@@ -1,6 +1,7 @@
 #include "STFT.h"
 
 #include <stdlib.h> //calloc
+#include <string.h> //memset
 
 /*--------------------------------------------------------------------*/
 struct Opaque_STFT_Struct
@@ -12,7 +13,7 @@ struct Opaque_STFT_Struct
   int           hop_size;
   int           sample_counter;
   int           input_index;
-  int           output_index;;
+  int           output_index;
   dft_sample_t* window;
   dft_sample_t* running_input;
   dft_sample_t* running_output;
@@ -68,6 +69,15 @@ STFT* stft_destroy(STFT* self)
 }
 
 /*--------------------------------------------------------------------*/
+void stft_clear(STFT* self)
+{
+  if(!self) return;
+  self->sample_counter = self->input_index = self->output_index = 0;
+  memset(self->running_input, 0, (size_t)self->window_size * sizeof(*self->running_input));
+  memset(self->running_output, 0, (size_t)self->fft_N * sizeof(*self->running_output));
+  memset(self->real, 0, (size_t)self->fft_N * sizeof(*self->real));
+}
+
 /* resynthesized samples, if any, returned in real_input */
 void stft_process(STFT* self, dft_sample_t* real_input, int len, stft_onprocess_t onprocess, void* onprocess_self)
 {
@@ -144,7 +154,7 @@ struct Opaque_TWO_STFTS_Struct
   int           hop_size;
   int           sample_counter;
   int           input_index;
-  int           output_index;;
+  int           output_index;
   dft_sample_t* window;
   dft_sample_t* running_input;
   dft_sample_t* running_output;

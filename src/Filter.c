@@ -208,7 +208,7 @@ void filter_init_lowpass_coeffs(Filter* self)
       if(i != m_over_2)
         {
           i_minus_m_over_2 = i - m_over_2;
-          temp = sin(two_pi_f_t * i_minus_m_over_2);
+          temp = sin((double)two_pi_f_t * i_minus_m_over_2);
           temp /= M_PI * i_minus_m_over_2;
         }
       else
@@ -238,7 +238,7 @@ void filter_init_highpass_coeffs(Filter* self)
       if(i != m_over_2)
         {
           i_minus_m_over_2 = i - m_over_2;
-          temp = sin(two_pi_f_t * i_minus_m_over_2);
+          temp = sin((double)two_pi_f_t * i_minus_m_over_2);
           temp /= M_PI * i_minus_m_over_2;
           temp *= -1;
         }
@@ -265,7 +265,7 @@ void filter_init_bandpass_coeffs(Filter* self)
       if(i != m_over_2)
         {
           i_minus_m_over_2 = i - m_over_2;
-          temp = sin(two_pi_f_t * i_minus_m_over_2);
+          temp = sin((double)two_pi_f_t * i_minus_m_over_2);
           temp /= M_PI * i_minus_m_over_2;
           temp *= -1;
         }

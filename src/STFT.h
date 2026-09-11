@@ -18,6 +18,8 @@ typedef void (*stft_onprocess_t)(void* onprocess_self, dft_sample_t* real, int N
 
 STFT*   stft_new     (int window_size /*power of 2 please*/, int overlap /* 1, 2, 4, 8 */, int should_resynthesize);
 STFT*   stft_destroy (STFT* self);
+/* Clear stream history and partial hops; keep the window/configuration. */
+void    stft_clear   (STFT* self);
 void    stft_process (STFT* self, dft_sample_t* real_input, int len, stft_onprocess_t onprocess, void* onprocess_self);
 int     stft_get_N (STFT* self);
 int     stft_get_overlap (STFT* self);

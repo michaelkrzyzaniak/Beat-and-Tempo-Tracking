@@ -1,3 +1,39 @@
+# PVT Beat Tracker
+
+This is the GNA Services maintained tracker used by Procedural Visualizer Tool.
+It starts from Michael Krzyzaniak's MIT-licensed library and now includes our own
+reusable onset front end, selectable detection methods, corrected streaming
+callback timestamps and reset behavior, and standalone regression tests.
+
+See [DESIGN.md](DESIGN.md) for module contracts, ownership, limitations, and the
+path toward replacing the remaining inherited tempo/beat components.
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+Select a detector before processing a stream:
+
+```c
+BTT* tracker = btt_new_default();
+if (tracker) {
+    btt_set_onset_detection_method(tracker, PVT_ONSET_NEIGHBOR_FLUX);
+    /* Install callbacks and feed mono audio at the configured sample rate. */
+    tracker = btt_destroy(tracker);
+}
+```
+
+Available methods are `PVT_ONSET_SPECTRAL_FLUX` (the default),
+`PVT_ONSET_NEIGHBOR_FLUX`, and `PVT_ONSET_HIGH_FREQUENCY_FLUX`. Applications with
+an existing FFT can call `pvt_onset_strength()` directly without a BTT instance.
+
+The original API reference follows. Existing API names and MIT attribution are
+retained; the implementation corrections above supersede its historical behavior.
+
+---
+
 # Beat-and-Tempo-Tracking
 Beat-and-Tempo-Tracking is an ANSI C library that taps its metaphorical foot along with the beat when it hears music. It is realtime and causal. It is an onset detector, tempo-estimator, and beat predictor. It is a combination of several state-of-the art methods. You feed buffers of audio data into it, and it notifies you when an onset occurs, when it has a new tempo estimate, or when it thinks the beat should happen. It requires no external libraries or packages, and has no platform-dependent code. It was designed to run on ebmedded linux computers in musical robots, and It should run on anything.
 

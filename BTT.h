@@ -33,6 +33,7 @@ extern "C"{
 #endif   //(__cplusplus)
 
 #include "src/DFT.h"
+#include "PVTOnset.h"
 
 /*--------------------------------------------------------------------*/
 typedef enum
@@ -117,6 +118,12 @@ int       btt_get_count_in_n                     (BTT* self);
 
 /* only valid in metronome mode */
 void      btt_set_metronome_bpm                  (BTT* self, double bpm);
+
+/* PVT onset methods. Set between process calls, ideally before feeding a new
+ * stream. Changing the method clears spectral history; tempo history remains.
+ * Returns 1 on success; invalid methods/null trackers return 0 unchanged. */
+int btt_set_onset_detection_method(BTT* self, pvt_onset_method method);
+pvt_onset_method btt_get_onset_detection_method(BTT* self);
 
 /* onset detection adjustments */
 void      btt_set_use_amplitude_normalization    (BTT* self, int use);
